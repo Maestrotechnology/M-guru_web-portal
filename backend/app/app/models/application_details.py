@@ -14,7 +14,7 @@ class ApplicationDetails(Base):
     qualification = Column(String(100))
     application_status = Column(TINYINT , comment="1-> seleted, 2-> rejected, null-> not defined")
     scholarship = Column(Integer)
-    passed_out_year = Column(DateTime)
+    passed_out_year = Column(String(4))
 
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)

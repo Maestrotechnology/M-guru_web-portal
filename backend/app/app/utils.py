@@ -73,7 +73,7 @@ async def send_mail(receiver_email, message):  # Demo
 
 def file_storage(file_name, f_name):
 
-    base_dir = settings.BASE_UPLOAD_FOLDER+"/file_mconnect"
+    base_dir = settings.BASE_UPLOAD_FOLDER+"/m-guru"
 
     dt = str(int(datetime.utcnow().timestamp()))
 
@@ -98,7 +98,7 @@ def file_storage(file_name, f_name):
 
     save_full_path = f'{output_dir}{files_name[0]}{dt}.{txt1}'
 
-    file_exe = f"file_mconnect/{f_name}{dt}.{txt1}"
+    file_exe = f"m-guru/{f_name}{dt}.{txt1}"
     with open(save_full_path, "wb") as buffer:
         shutil.copyfileobj(file_name.file, buffer)
 
