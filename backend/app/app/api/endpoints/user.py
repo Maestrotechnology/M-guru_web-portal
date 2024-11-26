@@ -146,7 +146,8 @@ async def list_user(db:Session=Depends(deps.get_db),
                 "email":row.email,
                 "phone_number":row.phone,
                 "status":row.status,
-                "user_type":row.user_type
+                "user_type":row.user_type,
+                "address":row.address
             })
         data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,
@@ -204,7 +205,8 @@ async def view_user(db:Session=Depends(get_db),
                 "email":getuser.email,
                 "phone_number":getuser.phone,
                 "status":getuser.status,
-                "user_type":getuser.user_type
+                "user_type":getuser.user_type,
+                "address":getuser.address
             }
 
     return {"status":1,"msg":"Success","data":dataList}
