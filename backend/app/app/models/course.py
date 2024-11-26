@@ -1,17 +1,18 @@
-# from sqlalchemy import  Column, Integer, String, DateTime
-# from sqlalchemy.orm import relationship
-# from app.db.base_class import Base
-# from sqlalchemy.dialects.mysql import TINYINT
+from sqlalchemy import  Column, Integer, String, DateTime
+from sqlalchemy.orm import relationship
+from app.db.base_class import Base
+from sqlalchemy.dialects.mysql import TINYINT
 
 
-# class Course(Base):
-#     __tablename__ = "course"
+class Course(Base):
+    __tablename__ = "course"
 
-#     id = Column(Integer, primary_key=True,index=True)
-#     name = Column(String(50))
-#     status = Column(TINYINT, comment="1-> active , 2-> inactive")
-#     created_at = Column(DateTime)
-#     updated_at = Column(DateTime)
+    id = Column(Integer, primary_key=True,index=True)
+    name = Column(String(50))
+    status = Column(TINYINT, comment="1-> active , 2-> inactive")
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
 
-#     # relationship
-#     enrolments = relationship("StudentCourseEnrolment", back_populates="course")
+    # relationship
+    applications = relationship("ApplicationDetails",back_populates="courses")
+    batch_details = relationship("BatchCourseDetails", back_populates="course")
