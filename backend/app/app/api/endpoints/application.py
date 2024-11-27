@@ -244,7 +244,8 @@ async def enterInterviewMarks(
                               aptitude_mark: Annotated[int, Form(...)],
                               programming_mark: Annotated[int, Form(...)],
                               overall_mark: Annotated[int, Form(...)],
-                              application_status: Annotated[int, Form(description="1-> seleted 2->not seleted ")]=None
+                              application_status: Annotated[int, Form(description="1-> seleted 2->not seleted ")]=None,
+                              scholarship: Annotated[int, Form()] = None
 ):
     db_interview_details = db.query(Interview).filter(
         Interview.application_id == application_id
@@ -254,8 +255,10 @@ async def enterInterviewMarks(
         return {"status":0, "msg":"Invalid interview details"}
     if application_status==1:
         db_interview_details.application.application_status=1
+        db_interview_details.application.scholarship=scholarship
     elif application_status==2:
         db_interview_details.application.application_status=2
+
     db_interview_details.attended_date = attended_date
     db_interview_details.communication_mark = communication_mark
     db_interview_details.aptitude_mark = aptitude_mark

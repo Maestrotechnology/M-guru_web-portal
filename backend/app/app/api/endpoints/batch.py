@@ -9,6 +9,7 @@ from app.utils import *
 from sqlalchemy import or_
 from pydantic import EmailStr
 from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_validation
+from utils import file_storage,send_mail,get_pagination
 
 router = APIRouter()
 
@@ -19,7 +20,7 @@ async def createBatch(db:Session=Depends(get_db),
                      start_date:datetime=Form(...),
                      end_date:datetime=Form(...),
                      fee:int=Form(...),
-                     description:int=Form(None)):
+                     description:str=Form(None)):
     
     user = get_user_token(db,token=token)
     if not user:
@@ -126,9 +127,66 @@ async def listBatch(db:Session=Depends(deps.get_db),
 
     else:
         return({'status' :-1,
-                'msg' :'Sorry! your login session expired. please login again.'}) 
-    
+                'msg' :'Sorry! your login session expired. please login again.'})
 
+ 
+    
+@router.post("/allocate_batch")
+async def allocateBatch(
+                        db: Session=Depends(get_db),
+                        application_id: int=Form(...),
+                        batch_id: int=Form(...),
+                        course_id: int=Form(...),
+):
+    application_data = db.query(ApplicationDetails).filter(ApplicationDetails.id == application_id,ApplicationDetails.status==1).first()
+    if not application_data:
+        return {"status":0, "msg":"Invalid application"}
+    batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status == 1).first()
+    if not batch_data:
+        return {"status":0, "msg":"Invalid batch"}
+    course_data = db.query(Course).filter(Course.id == course_id,Course.status == 1).first()
+    if not course_data:
+        return {"status":0, "msg":"Invalid Course"}
+    
+    await send_mail(application_data.email,f"Your scholarship is {application_data.scholarship} and you joining date is {batch_data.start_date.strftime('%Y-%m-%d')}")
+
+    create_student = User(
+        name = application_data.name,
+        email = application_data.email,
+        user_type = 3,
+        username = application_data.name,
+        password = 12345,
+        create_at = datetime.now(settings.tz_IN),
+        status = 1
+    )
+    db.add(create_student)
+    db.commit()
+
+    student_batch_details = BatchCourseDetails(
+        status = 1,
+        created_at = datetime.now(settings.tz_IN),
+        updated_at = datetime.now(settings.tz_IN),
+        batch_id = batch_data.id,
+        student_id = create_student.id,
+        course_id = course_data.id, 
+    )
+
+    db.add(student_batch_details)
+    db.commit()
+    return {"status":1,"msg":"Successfully sent the details to the student and allocated the batch"}
+
+# @router.post("/list_batch_details")
+# async def listBatchDetails(
+#                             db: Session=Depends(deps.get_db),
+#                             token:  str=Form(...),
+#                             batch_id: int = Form(...),
+#                             page: int=1,
+#                             size: int=10
+# ):
+#     batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status==1).first()
+#     if not batch_data:
+#         return {"status":0, "msg":"Invalid batch"}
+    
 
 
 
