@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends,UploadFile,Form
+from fastapi import APIRouter,Depends,UploadFile,Form,File
 from typing import Annotated
 from api.deps import get_db
 from sqlalchemy.orm import Session
@@ -10,13 +10,35 @@ from utils import file_storage
 
 router = APIRouter()
 
+@router.post("/captcha_check")
+async def captchaCheck(captcha_token: str = Form(...)):
+    import requests
+ 
+    response_data = {"secret": settings.SECRET_KEY, "response": captcha_token}
+ 
+    response = requests.post(
+        "https://www.google.com/recaptcha/api/siteverify", data=response_data
+    )
+ 
+    if response.status_code == 200:
+        response_json = response.json()
+        success = response_json.get("success", False)
+        error_codes = response_json.get("error-codes", [])
+ 
+        if success:
+            return {"status": 1, "msg": "Success"}
+        else:
+            return {"status": 0, "msg": "Captcha failed", "error_codes": error_codes}
+    else:
+        return {"status": 0, "msg": "Captcha validation failed with error"}
+
 @router.post("/create_application")
 async def createApplication(*,
                             db: Annotated[Session, Depends(get_db)],
                             name: Annotated[str, Form(...)],
                             email: Annotated[EmailStr, Form(...)],
                             phone: Annotated[str, Form(...)],
-                            resume: Annotated[UploadFile, Form()]=None,
+                            resume: UploadFile = File(None),
                             qualification: Annotated[str, Form(...)],
                             passed_out_year: Annotated[str, Form(...)],
                             enquiry_id: Annotated[int, Form(...)],
@@ -47,7 +69,7 @@ async def UpdateApplication(*,
                             name: Annotated[str, Form(...)],
                             email: Annotated[EmailStr, Form(...)],
                             phone: Annotated[str, Form(...)],
-                            resume: Annotated[UploadFile, Form()],
+                            resume: UploadFile = File(None),
                             qualification: Annotated[str, Form(...)],
                             passed_out_year: Annotated[str, Form(...)],
                             enquiry_id: Annotated[int, Form(...)],
@@ -78,7 +100,10 @@ async def UpdateApplication(*,
     db_application.passed_out_year = passed_out_year
     db_application.course_id = course_id
     db_application.enquiry_id = enquiry_id
+    db_application.resume = file_url
 
     db.add(db_application)
     db.commit()
     return {"status":1,"msg":"Successfully submitted"}
+
+
