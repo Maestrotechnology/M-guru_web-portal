@@ -53,7 +53,7 @@ async def send_mail(receiver_email, message):  # Demo
  
     msg["From"] = sender_email
     msg["To"] = receiver_email
-    msg["Subject"] = "Maestro Sales & Management"
+    msg["Subject"] = "Application status"
  
     # msg = str(message)
     print(msg)
@@ -95,10 +95,11 @@ def file_storage(file_name, f_name):
     txt2 = splitted[1][::-1]
 
     files_name = f_name.split(".")
-
+    
     save_full_path = f'{output_dir}{files_name[0]}{dt}.{txt1}'
-
-    file_exe = f"m-guru/{f_name}{dt}.{txt1}"
+    print()
+    file_exe = f"m-guru/{files_name[0]}{dt}.{txt1}"
+    # print(file_exe)
     with open(save_full_path, "wb") as buffer:
         shutil.copyfileobj(file_name.file, buffer)
 
