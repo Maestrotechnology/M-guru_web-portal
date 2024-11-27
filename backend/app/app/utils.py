@@ -234,35 +234,35 @@ def check(email):
     except EmailNotValidError as e:
         return False
 
-def convert_tz(time_data, from_zone: str, to_zone: str) -> datetime:
+# def convert_tz(time_data, from_zone: str, to_zone: str) -> datetime:
 
-    # METHOD 1: Hardcode zones:
-    # from_zone = tz.gettz('UTC')
-    # to_zone = tz.gettz('Asia/Kolkata')
+#     # METHOD 1: Hardcode zones:
+#     # from_zone = tz.gettz('UTC')
+#     # to_zone = tz.gettz('Asia/Kolkata')
 
-    from_zn = from_zone.split(' (') if from_zone else None
-    to_zn = to_zone.split(' (') if from_zone else None
+#     from_zn = from_zone.split(' (') if from_zone else None
+#     to_zn = to_zone.split(' (') if from_zone else None
 
-    from_zone = tz.gettz(from_zn[0])
-    to_zone = tz.gettz(to_zn[0])
+#     from_zone = tz.gettz(from_zn[0])
+#     to_zone = tz.gettz(to_zn[0])
 
-    # METHOD 2: Auto-detect zones:
-    # from_zone = tz.tzutc()
-    # to_zone = tz.tzlocal()
+#     # METHOD 2: Auto-detect zones:
+#     # from_zone = tz.tzutc()
+#     # to_zone = tz.tzlocal()
 
-    # utc1 = datetime.utcnow()
-    from_time = time_data
-    if type(time_data) == str:
-        try:
-            from_time = datetime.strptime(time_data, '%Y-%m-%d %H:%M:%S')
-        except:
-            from_time = datetime.strptime(time_data, '%Y-%m-%dT%H:%M:%S')
-    from_time_zone = from_time.replace(tzinfo=from_zone, microsecond=0)
+#     # utc1 = datetime.utcnow()
+#     from_time = time_data
+#     if type(time_data) == str:
+#         try:
+#             from_time = datetime.strptime(time_data, '%Y-%m-%d %H:%M:%S')
+#         except:
+#             from_time = datetime.strptime(time_data, '%Y-%m-%dT%H:%M:%S')
+#     from_time_zone = from_time.replace(tzinfo=from_zone, microsecond=0)
 
-    # Convert time zone
-    to_time = from_time_zone.astimezone(to_zone)
+#     # Convert time zone
+#     to_time = from_time_zone.astimezone(to_zone)
 
-    return to_time.replace(tzinfo=None)
+#     return to_time.replace(tzinfo=None)
 
 
 def getTimeDifferenceDate(start,end):

@@ -5,3 +5,4 @@ from .batch import Batch
 from .course import Course
 from .enquiry_type import EnquiryType
 from .interview import Interview
+from .api_token import ApiTokens

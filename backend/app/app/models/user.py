@@ -22,6 +22,7 @@ class User(Base):
     otp_expire_at = Column(DateTime)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
+    status= Column(TINYINT)
 
      # Relationships
     enrolled_batches_details = relationship(
@@ -34,6 +35,6 @@ class User(Base):
         foreign_keys="[BatchCourseDetails.trainer_id]",
         back_populates="trainer",
     )
-
+    api_tokens=relationship("ApiTokens",back_populates="user")
 
 
