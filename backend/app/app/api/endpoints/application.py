@@ -3,10 +3,10 @@ from typing import Annotated
 from api.deps import get_db
 from sqlalchemy.orm import Session
 from pydantic import EmailStr
-from app.models import Course,ApplicationDetails,EnquiryType
+from app.models import Course,ApplicationDetails,EnquiryType,Interview
 from core.config import settings
 from datetime import datetime
-from utils import file_storage
+from utils import file_storage,send_mail
 
 router = APIRouter()
 
@@ -105,5 +105,128 @@ async def UpdateApplication(*,
     db.add(db_application)
     db.commit()
     return {"status":1,"msg":"Successfully submitted"}
+
+@router.post("/list_application")
+async def listApplication(*,
+                            db: Annotated[Session, Depends(get_db)],
+                            type: Annotated[int, Form(...,description="1->current_applications , 2->interview , 3->attended , 4-> not selected")],
+                            id: Annotated[str, Form(description="multiple ids use (1,2,3) else (1)")] = None,
+                            name: Annotated[str, Form()] = None,
+                            phone: Annotated[str, Form()] = None,
+                            course_id: Annotated[int, Form()] = None,
+                            enquiry_id: Annotated[int, Form()] = None,
+):
+    if type == 1:
+        db_applications = db.query(ApplicationDetails).outerjoin(
+            Interview,Interview.application_id == ApplicationDetails.id
+        ).filter(Interview.id == None,ApplicationDetails.application_status == None,ApplicationDetails.status==1).all()
+    elif type == 2:
+        db_applications = db.query(ApplicationDetails).join(
+            Interview,Interview.application_id == ApplicationDetails.id
+        ).filter(Interview.attended_date==None,ApplicationDetails.status==1).all()
+    elif type == 3:
+        db_applications = db.query(ApplicationDetails).join(
+            Interview,Interview.application_id == ApplicationDetails.id
+        ).filter(Interview.attended_date!=None,ApplicationDetails.status==1).all()
+    elif type == 4:
+        db_applications = db.query(ApplicationDetails).filter(
+            ApplicationDetails.application_status == 2,ApplicationDetails.status==1
+        ).all()
+    else:
+        return {"status": 0, "msg":"Invaild type"}
+    
+    if id:
+        application_ids = id.split(",")
+        db_applications = db_applications.filter(ApplicationDetails.id.in_(application_ids))
+    if name:
+        db_applications = db_applications.filter(ApplicationDetails.name.ilike(f"%{name}%"))  
+    if phone:
+        db_applications = db_applications.filter(ApplicationDetails.phone == phone)
+    if course_id:
+        db_applications = db_applications.filter(ApplicationDetails.course_id == course_id)
+    if enquiry_id:
+        db_applications = db_applications.filter(ApplicationDetails.enquiry_id == enquiry_id)
+
+    data = []
+    for application in db_applications:
+        data.append(
+            {
+                "id":application.id,
+                "name":application.name,
+                "email":application.email,
+                "phone":application.phone,
+                "resume":f"{settings.BASEURL}/{application.resume}",
+                "qualification":application.qualification,
+                "passed_out_year":application.passed_out_year,
+                "course_id": application.course_id,
+                "course_name": application.courses.name if application.courses else None,  
+                "enquiry_id": application.enquiry_id,
+                "enquiry_name": application.enquires.name if application.enquires else None,  
+            }
+        )
+    return {
+        "status": 1,
+        "msg": "Success",
+        "data": data,
+    }
+
+@router.post("/schedule_interview")
+async def scheduleInterview(
+                            db: Annotated[Session, Depends(get_db)],
+                            application_id: Annotated[int, Form(...)],
+                            scheduled_date: datetime = Form(..., description="The scheduled date for the interview")
+):
+    db_application = db.query(ApplicationDetails).filter(
+        ApplicationDetails.id == application_id,
+        ApplicationDetails.status == 1
+    ).first()
+
+    if not db_application:
+        return {"status":0, "msg":"Invalid application"}
+    
+    await send_mail(db_application.email,f"Success{scheduled_date}")
+
+    create_interview = Interview(
+        scheduled_date=scheduled_date,
+        application_id=application_id,
+        created_at = datetime.now(settings.tz_IN),
+        status=1
+    )
+    db.add(create_interview)
+    db.commit()
+
+    return {"status":1, "msg":"Interview scheduled Successfully"}
+
+@router.post("/enter_interview_marks")
+async def enterInterviewMarks(
+                              db: Annotated[Session, Depends(get_db)],
+                              application_id: Annotated[int, Form(...)],
+                              attended_date: Annotated[datetime, Form(...)],
+                              communication_mark: Annotated[int, Form(...)],
+                              aptitude_mark: Annotated[int, Form(...)],
+                              programming_mark: Annotated[int, Form(...)],
+                              overall_mark: Annotated[int, Form(...)]
+):
+    db_interview_details = db.query(Interview).filter(
+        Interview.application_id == application_id
+    ).first()
+
+    if not db_interview_details:
+        return {"status":0, "msg":"Invalid application"}
+    
+    db_interview_details.attended_date = attended_date
+    db_interview_details.communication_mark = communication_mark
+    db_interview_details.aptitude_mark = aptitude_mark
+    db_interview_details.programming_mark = programming_mark
+    db_interview_details.overall_mark = overall_mark
+    db_interview_details.updated_at = datetime.now(settings.tz_IN)
+    db.add(db_interview_details)
+    db.commit()
+
+    return {"status":1,"msg":"Mark Updated"}
+    
+
+
+
 
 

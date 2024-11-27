@@ -53,7 +53,7 @@ async def send_mail(receiver_email, message):  # Demo
  
     msg["From"] = sender_email
     msg["To"] = receiver_email
-    msg["Subject"] = "Maestro Sales & Management"
+    msg["Subject"] = "Application status"
  
     # msg = str(message)
     print(msg)
