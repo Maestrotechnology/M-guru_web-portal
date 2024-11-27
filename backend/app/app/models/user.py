@@ -16,13 +16,11 @@ class User(Base):
     address = Column(Text)
     create_at = Column(DateTime)
     update_at = Column(DateTime)
-    is_active = Column(TINYINT,comment = "1->active,2->inactive,0->delete")
+    status = Column(TINYINT,comment = "1->active,2->inactive,0->delete")
     reset_key=Column(String(255))
     otp = Column(String(10))
     otp_expire_at = Column(DateTime)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-    status= Column(TINYINT)
+
 
      # Relationships
     enrolled_batches_details = relationship(
