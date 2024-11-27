@@ -55,10 +55,9 @@ async def createApplication(*,
         file_path, file_url = file_storage(resume, resume.filename)
     else:
         file_url = None
-    print(resume.filename)
-    print(file_url)
+
     application = ApplicationDetails(           
-        name=name,email=email,phone=phone,resume=file_url,qualification=qualification,passed_out_year=passed_out_year,status=1,created_at=datetime.now(settings.tz_IN)
+        name=name,email=email,phone=phone,resume=file_url,qualification=qualification,passed_out_year=passed_out_year,status=1,created_at=datetime.now(settings.tz_IN),course_id=course_id,enquiry_id=enquiry_id
     )
     db.add(application)
     db.commit()
@@ -111,7 +110,7 @@ async def UpdateApplication(*,
 @router.post("/list_application")
 async def listApplication(*,
                             db: Annotated[Session, Depends(get_db)],
-                            type: Annotated[int, Form(...,description="1->current_applications , 2->interview , 3->attended , 4-> not selected")],
+                            type: Annotated[int, Form(...,description="1->current_applications , 2->interview , 3->attended , 4-> not selected, 5-> selected")],
                             id: Annotated[str, Form(description="multiple ids use (1,2,3) else (1)")] = None,
                             name: Annotated[str, Form()] = None,
                             phone: Annotated[str, Form()] = None,
@@ -136,6 +135,11 @@ async def listApplication(*,
         db_applications = db.query(ApplicationDetails).filter(
             ApplicationDetails.application_status == 2,ApplicationDetails.status==1
         )
+    elif type == 5:#selected
+        db_applications = db.query(ApplicationDetails).filter(
+            ApplicationDetails.application_status == 1,ApplicationDetails.status==1
+        )
+
     else:
         return {"status": 0, "msg":"Invaild type"}
     
@@ -180,6 +184,19 @@ async def listApplication(*,
             
     return ({"status":1,"msg":"Success.","data":data})
 
+@router.post("/delete_application")
+async def deleteApplication(
+                            db: Annotated[Session, Depends(get_db)],
+                            application_id: Annotated[int, Form(...)]
+):
+    db_application = db.query(ApplicationDetails).filter(ApplicationDetails.id == application_id, ApplicationDetails.status==1).first()
+    if not db_application:
+        return {"status":0,"msg":"Application not found"}
+    db_application.status=2
+    db.add(db_application)
+    db.commit()
+    return {"status":1,"msg":"Application successfully deleted"}
+
 
 @router.post("/schedule_interview")
 async def scheduleInterview(
@@ -214,8 +231,9 @@ async def scheduleInterview(
 
         await send_mail(db_application.email,f"Unsuccess{scheduled_date}")
         db_application.application_status=2
-        db.add(create_interview)
+        db.add(db_application)
         db.commit()
+        return {"status":1, "msg":"Mail sent Successfully"}
         
 @router.post("/enter_interview_marks")
 async def enterInterviewMarks(
