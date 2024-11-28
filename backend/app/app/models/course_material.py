@@ -15,7 +15,9 @@ class CourseMaterial(Base):
 
     # ForeignKey
     course_id = Column(Integer,ForeignKey("course.id"))
+    created_by_user_id = Column(Integer, ForeignKey("user.id"))
 
     #relationship
     course = relationship("Course",back_populates="materials")
     documents = relationship("CourseMedia", back_populates="course_material")
+    created_by = relationship("User",back_populates="materials")

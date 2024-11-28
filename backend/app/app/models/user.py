@@ -29,6 +29,7 @@ class User(Base):
      # Relationships
     batch = relationship("Batch",back_populates="users",uselist=False)
     course = relationship("Course",back_populates="users",uselist=False)
+    materials = relationship("CourseMaterial",back_populates="created_by")
 
     # enrolled_batches_details = relationship(
     #     "BatchCourseDetails",
