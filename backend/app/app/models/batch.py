@@ -19,5 +19,7 @@ class Batch(Base):
     updated_at = Column(DateTime)
 
     # relationship
-    batch_details = relationship("BatchCourseDetails", back_populates="batch")
+    users = relationship("User",back_populates="batch")
 
+    # batch_details = relationship("BatchCourseDetails", back_populates="batch")
+    

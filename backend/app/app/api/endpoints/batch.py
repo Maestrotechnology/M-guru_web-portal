@@ -8,7 +8,7 @@ from datetime import datetime
 from app.utils import *
 from sqlalchemy import or_
 from pydantic import EmailStr
-from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_validation
+from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_validation,get_username
 from utils import file_storage,send_mail,get_pagination
 
 router = APIRouter()
@@ -148,31 +148,30 @@ async def allocateBatch(
     if not course_data:
         return {"status":0, "msg":"Invalid Course"}
     
+    checkUser = db.query(User).filter(User.status==1)
+
+    if checkUser.filter(User.email == application_data.email).first():
+        return {"status":0,"msg":"Give Email is already exist"}
+    if checkUser.filter(User.phone==application_data.phone).first():
+        return {"status":0,"msg":"Given Phone Number is already exist"}
+    
     await send_mail(application_data.email,f"Your scholarship is {application_data.scholarship} and you joining date is {batch_data.start_date.strftime('%Y-%m-%d')}")
 
     create_student = User(
         name = application_data.name,
         email = application_data.email,
         user_type = 3,
-        username = application_data.name,
+        username = get_username(db,3),
         password = get_password_hash("12345"),
         create_at = datetime.now(settings.tz_IN),
-        status = 1
+        status = 1,
+        phone=application_data.phone,
+        batch_id = batch_id,
+        course_id = course_id
     )
     db.add(create_student)
     db.commit()
 
-    student_batch_details = BatchCourseDetails(
-        status = 1,
-        created_at = datetime.now(settings.tz_IN),
-        updated_at = datetime.now(settings.tz_IN),
-        batch_id = batch_data.id,
-        student_id = create_student.id,
-        course_id = course_data.id, 
-    )
-
-    db.add(student_batch_details)
-    db.commit()
     return {"status":1,"msg":"Successfully sent the details to the student and allocated the batch"}
 
 @router.post("/list_batch_details")
@@ -187,15 +186,10 @@ async def listBatchDetails(
     if not batch_data:
         return {"status":0, "msg":"Invalid batch"}
     
-    students = db.query(User).join(
-                        BatchCourseDetails,
-                        BatchCourseDetails.student_id == User.id
-                ).join(
-                        Batch,
-                        Batch.id == BatchCourseDetails.batch_id
-                ).filter(
-                        Batch.id == batch_id,BatchCourseDetails.status==1,User.status==1,Batch.status==1,User.user_type==3
-                )
+    students = db.query(User).filter(
+        User.batch_id==batch_id,User.status==1
+    )
+    
     students = students.order_by(User.id.desc())
     totalCount= students.count()
 
@@ -210,7 +204,8 @@ async def listBatchDetails(
             "email": student.email,
             "phone": student.phone,
             "address": student.address,
-            "course": [i.course.name for i in student.enrolled_batches_details]
+            "course": [i.course.name for i in student.enrolled_batches_details],
+            "batch_id": batch_id
         })
         
     data=({"page":page,
@@ -218,6 +213,7 @@ async def listBatchDetails(
            "total_page":total_page,
             "total_count":totalCount,
             "items":dataList})
+    
     return {"status":1,"msg":"Success","data":data}
     
 

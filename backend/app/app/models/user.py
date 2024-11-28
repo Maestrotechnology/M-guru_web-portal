@@ -21,18 +21,26 @@ class User(Base):
     otp = Column(String(10))
     otp_expire_at = Column(DateTime)
 
+    # ForeignKey
+    batch_id = Column(Integer,ForeignKey("batch.id"))
+    course_id = Column(Integer,ForeignKey("course.id"))
+
 
      # Relationships
-    enrolled_batches_details = relationship(
-        "BatchCourseDetails",
-        foreign_keys="[BatchCourseDetails.student_id]",
-        back_populates="student",
-    )
-    assigned_batches_details = relationship(
-        "BatchCourseDetails",
-        foreign_keys="[BatchCourseDetails.trainer_id]",
-        back_populates="trainer",
-    )
+    batch = relationship("Batch",back_populates="users",uselist=False)
+    course = relationship("Course",back_populates="users",uselist=False)
+
+    # enrolled_batches_details = relationship(
+    #     "BatchCourseDetails",
+    #     uselist=False,
+    #     foreign_keys="[BatchCourseDetails.student_id]",
+    #     back_populates="student",
+    # )
+    # assigned_batches_details = relationship(
+    #     "BatchCourseDetails",
+    #     foreign_keys="[BatchCourseDetails.trainer_id]",
+    #     back_populates="trainer",
+    # )
     api_tokens=relationship("ApiTokens",back_populates="user")
 
 
