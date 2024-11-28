@@ -58,7 +58,7 @@ async def updateEnquiry(db:Session=Depends(get_db),
     db.commit()
     return {
         "status" : 1,
-        "msg":"Course Updated successfully"
+        "msg":"Enquiry Updated successfully"
     }
 
 @router.post("/delete_Enquiry")
