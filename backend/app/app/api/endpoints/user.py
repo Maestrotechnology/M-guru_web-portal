@@ -145,7 +145,7 @@ async def list_user(
     if email:
         get_user = get_user.filter(User.email == email)
     if username:
-        get_user = get_user.filter(User.username.ilike(f"%{username}%"))
+        get_user = get_user.filter(User.username.like(f"%{username}%"))
     if phoneNumber:
         get_user = get_user.filter(User.phone == phoneNumber)
 
