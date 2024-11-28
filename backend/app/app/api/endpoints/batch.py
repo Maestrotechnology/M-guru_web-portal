@@ -102,10 +102,10 @@ async def listBatch(db:Session=Depends(deps.get_db),
                    ):
     user=deps.get_user_token(db=db,token=token)
     if user:
-        getBatch =  db.query(Batch).filter(Batch.status ==1)
+        getBatch =  db.query(Batch).filter(Batch.status==1)
         if Batch_name:
             getBatch = getBatch.filter(Batch.name.like("%"+Batch_name+"%"))
-        getBatch = getBatch.order_by(User.id.desc())
+        getBatch = getBatch.order_by(Batch.id.desc())
         totalCount= getBatch.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         getBatch=getBatch.limit(limit).offset(offset).all()
@@ -155,7 +155,7 @@ async def allocateBatch(
         email = application_data.email,
         user_type = 3,
         username = application_data.name,
-        password = 12345,
+        password = get_password_hash("12345"),
         create_at = datetime.now(settings.tz_IN),
         status = 1
     )
@@ -175,17 +175,50 @@ async def allocateBatch(
     db.commit()
     return {"status":1,"msg":"Successfully sent the details to the student and allocated the batch"}
 
-# @router.post("/list_batch_details")
-# async def listBatchDetails(
-#                             db: Session=Depends(deps.get_db),
-#                             token:  str=Form(...),
-#                             batch_id: int = Form(...),
-#                             page: int=1,
-#                             size: int=10
-# ):
-#     batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status==1).first()
-#     if not batch_data:
-#         return {"status":0, "msg":"Invalid batch"}
+@router.post("/list_batch_details")
+async def listBatchDetails(
+                            db: Session=Depends(deps.get_db),
+                            # token:  str=Form(...),
+                            batch_id: int = Form(...),
+                            page: int=1,
+                            size: int=10
+):
+    batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status==1).first()
+    if not batch_data:
+        return {"status":0, "msg":"Invalid batch"}
+    
+    students = db.query(User).join(
+                        BatchCourseDetails,
+                        BatchCourseDetails.student_id == User.id
+                ).join(
+                        Batch,
+                        Batch.id == BatchCourseDetails.batch_id
+                ).filter(
+                        Batch.id == batch_id,BatchCourseDetails.status==1,User.status==1,Batch.status==1,User.user_type==3
+                )
+    students = students.order_by(User.id.desc())
+    totalCount= students.count()
+
+    total_page,offset,limit=get_pagination(totalCount,page,size)
+    students=students.limit(limit).offset(offset).all()
+    dataList =[]
+
+    for student in students:
+        dataList.append({
+            "id": student.id,
+            "name": student.name,
+            "email": student.email,
+            "phone": student.phone,
+            "address": student.address,
+            "course": [i.course.name for i in student.enrolled_batches_details]
+        })
+        
+    data=({"page":page,
+           "size":size,
+           "total_page":total_page,
+            "total_count":totalCount,
+            "items":dataList})
+    return {"status":1,"msg":"Success","data":data}
     
 
 

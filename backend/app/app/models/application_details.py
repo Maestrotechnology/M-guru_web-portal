@@ -26,4 +26,4 @@ class ApplicationDetails(Base):
     #relationship
     enquires = relationship("EnquiryType", back_populates="applications")
     courses = relationship("Course", back_populates="applications")
-    interview_details = relationship("Interview", back_populates="application")
+    interview_details = relationship("Interview", back_populates="application",uselist=False)
