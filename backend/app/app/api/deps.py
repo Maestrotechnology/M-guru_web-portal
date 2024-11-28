@@ -133,3 +133,26 @@ def phoneNo_validation(phonenumber:str):
         return True
     return False
 
+def get_username(db: Session,type: int):
+    user = db.query(User).filter(User.status==1,User.user_type==type).order_by(User.id.desc()).first()
+    if type==2:
+        prefix = "MENTOR"
+        if not user:
+           return "MENTOR01"
+        else:
+            digit = int(user.username[6:] + 1 )
+            if digit<10:
+                digit = "0"+str(digit) 
+            return prefix+str(digit)
+    elif type == 3:
+        prefix = "MGURU"
+        if not user:
+           return "MGURU01"
+        else:
+            digit = int(user.username[5:] + 1 )
+            if digit<10:
+                digit = "0"+str(digit) 
+            return prefix+str(digit)
+
+
+

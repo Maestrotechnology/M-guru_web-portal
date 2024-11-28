@@ -8,7 +8,7 @@ from datetime import datetime
 from app.utils import *
 from sqlalchemy import or_
 from pydantic import EmailStr
-from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_validation
+from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_validation,get_username
 from utils import file_storage,send_mail,get_pagination
 
 router = APIRouter()
@@ -102,10 +102,10 @@ async def listBatch(db:Session=Depends(deps.get_db),
                    ):
     user=deps.get_user_token(db=db,token=token)
     if user:
-        getBatch =  db.query(Batch).filter(Batch.status ==1)
+        getBatch =  db.query(Batch).filter(Batch.status==1)
         if Batch_name:
             getBatch = getBatch.filter(Batch.name.like("%"+Batch_name+"%"))
-        getBatch = getBatch.order_by(User.id.desc())
+        getBatch = getBatch.order_by(Batch.id.desc())
         totalCount= getBatch.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         getBatch=getBatch.limit(limit).offset(offset).all()
@@ -148,44 +148,73 @@ async def allocateBatch(
     if not course_data:
         return {"status":0, "msg":"Invalid Course"}
     
+    checkUser = db.query(User).filter(User.status==1)
+
+    if checkUser.filter(User.email == application_data.email).first():
+        return {"status":0,"msg":"Give Email is already exist"}
+    if checkUser.filter(User.phone==application_data.phone).first():
+        return {"status":0,"msg":"Given Phone Number is already exist"}
+    
     await send_mail(application_data.email,f"Your scholarship is {application_data.scholarship} and you joining date is {batch_data.start_date.strftime('%Y-%m-%d')}")
 
     create_student = User(
         name = application_data.name,
         email = application_data.email,
         user_type = 3,
-        username = application_data.name,
-        password = 12345,
+        username = get_username(db,3),
+        password = get_password_hash("12345"),
         create_at = datetime.now(settings.tz_IN),
-        status = 1
+        status = 1,
+        phone=application_data.phone,
+        batch_id = batch_id,
+        course_id = course_id
     )
     db.add(create_student)
     db.commit()
 
-    student_batch_details = BatchCourseDetails(
-        status = 1,
-        created_at = datetime.now(settings.tz_IN),
-        updated_at = datetime.now(settings.tz_IN),
-        batch_id = batch_data.id,
-        student_id = create_student.id,
-        course_id = course_data.id, 
-    )
-
-    db.add(student_batch_details)
-    db.commit()
     return {"status":1,"msg":"Successfully sent the details to the student and allocated the batch"}
 
-# @router.post("/list_batch_details")
-# async def listBatchDetails(
-#                             db: Session=Depends(deps.get_db),
-#                             token:  str=Form(...),
-#                             batch_id: int = Form(...),
-#                             page: int=1,
-#                             size: int=10
-# ):
-#     batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status==1).first()
-#     if not batch_data:
-#         return {"status":0, "msg":"Invalid batch"}
+@router.post("/list_batch_details")
+async def listBatchDetails(
+                            db: Session=Depends(deps.get_db),
+                            # token:  str=Form(...),
+                            batch_id: int = Form(...),
+                            page: int=1,
+                            size: int=10
+):
+    batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status==1).first()
+    if not batch_data:
+        return {"status":0, "msg":"Invalid batch"}
+    
+    students = db.query(User).filter(
+        User.batch_id==batch_id,User.status==1
+    )
+    
+    students = students.order_by(User.id.desc())
+    totalCount= students.count()
+
+    total_page,offset,limit=get_pagination(totalCount,page,size)
+    students=students.limit(limit).offset(offset).all()
+    dataList =[]
+
+    for student in students:
+        dataList.append({
+            "id": student.id,
+            "name": student.name,
+            "email": student.email,
+            "phone": student.phone,
+            "address": student.address,
+            "course": [i.course.name for i in student.enrolled_batches_details],
+            "batch_id": batch_id
+        })
+        
+    data=({"page":page,
+           "size":size,
+           "total_page":total_page,
+            "total_count":totalCount,
+            "items":dataList})
+    
+    return {"status":1,"msg":"Success","data":data}
     
 
 

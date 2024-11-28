@@ -173,7 +173,14 @@ async def listApplication(*,
                 "course_id": application.course_id,
                 "course_name": application.courses.name if application.courses else None,  
                 "enquiry_id": application.enquiry_id,
-                "enquiry_name": application.enquires.name if application.enquires else None,  
+                "enquiry_name": application.enquires.name if application.enquires else None,
+                "scholarship": application.scholarship,
+                "interview_scheduled_date": application.interview_details.scheduled_date if application.interview_details else None,
+                "interview_attended_date": application.interview_details.attended_date if application.interview_details else None,
+                "communication_mark": application.interview_details.communication_mark if application.interview_details else None,
+                "aptitude_mark": application.interview_details.aptitude_mark if application.interview_details else None,
+                "programming_mark": application.interview_details.programming_mark if application.interview_details else None,
+                "overall_mark": application.interview_details.overall_mark if application.interview_details else None,
             }
         )
     data=({"page":page,
@@ -192,7 +199,7 @@ async def deleteApplication(
     db_application = db.query(ApplicationDetails).filter(ApplicationDetails.id == application_id, ApplicationDetails.status==1).first()
     if not db_application:
         return {"status":0,"msg":"Application not found"}
-    db_application.status=2
+    db_application.status=-1
     db.add(db_application)
     db.commit()
     return {"status":1,"msg":"Application successfully deleted"}
@@ -214,7 +221,9 @@ async def scheduleInterview(
         return {"status":0, "msg":"Invalid application"}
     
     if application_status==1:
-
+        if not scheduled_date:
+            return {"status":0, "msg":"Please enter interview date"}
+        
         await send_mail(db_application.email,f"Success{scheduled_date}")
 
         create_interview = Interview(
