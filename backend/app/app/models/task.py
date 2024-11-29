@@ -11,3 +11,8 @@ class Task(Base):
     status = Column(TINYINT, comment="1-> active , 2-> inactive")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
+
+    # ForeignKey
+    created_by_user_id = Column(Integer, ForeignKey("use.id"))
+    # relationship
+    created_by = relationship("User",back_populates="created_task")

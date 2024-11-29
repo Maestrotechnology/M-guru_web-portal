@@ -31,6 +31,7 @@ class User(Base):
     course = relationship("Course",back_populates="users",uselist=False)
     materials = relationship("CourseMaterial",back_populates="created_by")
     work_report = relationship("WorkReport", back_populates="users")
+    created_task = relationship("Task",back_populates="created_by")
     # enrolled_batches_details = relationship(
     #     "BatchCourseDetails",
     #     uselist=False,
