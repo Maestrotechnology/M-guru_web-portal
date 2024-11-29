@@ -10,7 +10,7 @@ class WorkReport(Base):
     id = Column(Integer,primary_key=True,index=True)
     check_in=Column(DateTime)
     check_out=Column(DateTime)
-    task=Column(String(255))
+    task_id=Column(Integer,ForeignKey("task.id"))
     description = Column(Text)
     work_time=Column(Integer)
     break_time=Column(Integer)
@@ -27,4 +27,6 @@ class WorkReport(Base):
 
     users = relationship("User",back_populates="work_report")
     work_history = relationship("WorkHistory",back_populates="work_report")
+
+    task = relationship("Task",back_populates="work_report")
     
