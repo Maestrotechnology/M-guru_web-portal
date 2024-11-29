@@ -90,7 +90,7 @@ async def listCourse(db:Session=Depends(deps.get_db),
         getCourse =  db.query(Course).filter(Course.status ==1)
         if Course_name:
             getCourse = getCourse.filter(Course.name.like("%"+Course_name+"%"))
-        getCourse = getCourse.order_by(User.id.desc())
+        getCourse = getCourse.order_by(Course.name)
         totalCount= getCourse.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         getCourse=getCourse.limit(limit).offset(offset).all()
