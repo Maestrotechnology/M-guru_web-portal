@@ -91,8 +91,8 @@ async def UpdateApplication(*,
         return {"status":0, "msg":"Invalid course"}
     if resume: 
         file_path, file_url = file_storage(resume, resume.filename)
-    else:
-        file_url = None
+        db_application.resume = file_url
+
         
     db_application.name = name
     db_application.email = email
@@ -101,7 +101,6 @@ async def UpdateApplication(*,
     db_application.passed_out_year = passed_out_year
     db_application.course_id = course_id
     db_application.enquiry_id = enquiry_id
-    db_application.resume = file_url
 
     db.add(db_application)
     db.commit()
