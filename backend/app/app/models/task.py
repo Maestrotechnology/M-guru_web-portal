@@ -13,6 +13,6 @@ class Task(Base):
     updated_at = Column(DateTime)
 
     # ForeignKey
-    created_by_user_id = Column(Integer, ForeignKey("use.id"))
+    created_by_user_id = Column(Integer, ForeignKey("user.id"))
     # relationship
     created_by = relationship("User",back_populates="created_task")
