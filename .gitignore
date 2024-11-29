@@ -1,3 +1,5 @@
+__pycache__/
+app.egg-info
 app/app/core/config.py
 backend/app/app/core/config.py
 env
