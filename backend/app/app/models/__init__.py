@@ -10,4 +10,5 @@ from .course_material import CourseMaterial
 from .course_media import CourseMedia
 from .work_history import WorkHistory
 from .workreport import WorkReport
+from .task import Task
 
