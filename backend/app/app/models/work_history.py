@@ -10,10 +10,12 @@ class WorkHistory(Base):
     id = Column(Integer,primary_key=True,index=True)
     work_report_id = Column(Integer,ForeignKey("work_report.id"))
     break_time=Column(DateTime)
+    breakEnd_time=Column(DateTime)
     work_time=Column(DateTime)
+    workEnd_time=Column(DateTime)
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
-    work_report = relationship("WorkReport",back_populates="work_history",uselist=False)
+    work_report = relationship("WorkReport",back_populates="work_history")
     
     

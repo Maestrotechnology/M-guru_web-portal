@@ -25,6 +25,6 @@ class WorkReport(Base):
     updated_at = Column(DateTime)
     user_id = Column(Integer,ForeignKey("user.id"))
 
-    users = relationship("User",back_populates="work_report",uselist=False)
-    work_history = relationship("WorkHistory",back_populates="work_report",uselist=False)
+    users = relationship("User",back_populates="work_report")
+    work_history = relationship("WorkHistory",back_populates="work_report")
     

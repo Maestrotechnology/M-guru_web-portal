@@ -8,3 +8,6 @@ from .interview import Interview
 from .api_token import ApiTokens
 from .course_material import CourseMaterial
 from .course_media import CourseMedia
+from .work_history import WorkHistory
+from .workreport import WorkReport
+
