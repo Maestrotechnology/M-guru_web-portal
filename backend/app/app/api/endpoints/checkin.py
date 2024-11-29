@@ -17,6 +17,7 @@ async def add_task(
     db: Session = Depends(deps.get_db),
     token: str = Form(...),
     task: str = Form(None),
+
     description: str = Form(None),
 ):
     user = deps.get_user_token(db=db, token=token)
@@ -109,12 +110,12 @@ async def start(
             if record.work_time and record.workEnd_time:
                
                 work_duration = record.workEnd_time - record.work_time
-                total_work_time += work_duration.total_seconds() / 3600  # Convert to hours
+                total_work_time += work_duration.total_seconds() 
 
             if record.break_time and record.workEnd_time:
                 
                 break_duration = record.workEnd_time - record.break_time
-                total_break_time += break_duration.total_seconds() / 3600  # Convert to hours
+                total_break_time += break_duration.total_seconds() 
 
         
         return {
