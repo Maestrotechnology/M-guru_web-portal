@@ -29,4 +29,5 @@ class WorkReport(Base):
     work_history = relationship("WorkHistory",back_populates="work_report")
 
     task = relationship("Task",back_populates="work_report")
+    task_detail = relationship("TaskDetail",back_populates="work_report")
     

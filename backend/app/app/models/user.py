@@ -43,6 +43,7 @@ class User(Base):
     #     foreign_keys="[BatchCourseDetails.trainer_id]",
     #     back_populates="trainer",
     # )
+    task_detail = relationship("TaskDetail",back_populates="user")
     api_tokens=relationship("ApiTokens",back_populates="user")
 
 
