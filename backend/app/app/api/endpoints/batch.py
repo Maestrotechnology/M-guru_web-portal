@@ -10,6 +10,7 @@ from sqlalchemy import or_
 from pydantic import EmailStr
 from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_validation,get_username
 from utils import file_storage,send_mail,get_pagination
+from api.endpoints.email_templetes import get_email_templete
 
 router = APIRouter()
 
@@ -58,7 +59,7 @@ async def updateBatch(db:Session=Depends(get_db),
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
     check_batch=db.query(Batch).filter(Batch.status==1)
-    get_batch=check_batch.query(Batch).filter(Batch.id==batch_id).first()
+    get_batch=check_batch.filter(Batch.id==batch_id).first()
     if not get_batch:
         return {"status":0,"msg":"Batch Id not found"}
     if name:
@@ -115,8 +116,8 @@ async def listBatch(db:Session=Depends(deps.get_db),
             dataList.append({
                 "Batch_id" :row.id,
                 "Batch_name":row.name,
-                "start_date":row.start_date,
-                "end_date":row.end_date,
+                "start_date":row.start_date.strftime("%d/%m/%Y"),
+                "end_date":row.end_date.strftime("%d/%m/%Y"),
                 "fee":row.fee
             })
         data=({"page":page,"size":size,"total_page":total_page,
@@ -155,7 +156,7 @@ async def allocateBatch(
     if checkUser.filter(User.phone==application_data.phone).first():
         return {"status":0,"msg":"Given Phone Number is already exist"}
     
-    await send_mail(application_data.email,f"Your scholarship is {application_data.scholarship} and you joining date is {batch_data.start_date.strftime('%Y-%m-%d')}")
+    await send_mail(receiver_email=application_data.email,message=get_email_templete(application_data,batch_data.start_date,4),subject="Application status")
 
     create_student = User(
         name = application_data.name,
@@ -204,7 +205,7 @@ async def listBatchDetails(
             "email": student.email,
             "phone": student.phone,
             "address": student.address,
-            "course": [i.course.name for i in student.enrolled_batches_details],
+            "course": student.course.name,
             "batch_id": batch_id
         })
         

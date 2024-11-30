@@ -36,17 +36,6 @@ async def checK_in(
                 in_longitude=longitude,
                 created_at=datetime.now(settings.tz_IN)
             )
-            db.add(addWorkReport)
-            addWorkHistory = WorkHistory(
-                work_report_id=WorkReport_id,
-                break_time=datetime.now(settings.tz_IN),
-                status=1,
-                created_at=datetime.now(settings.tz_IN),
-            )
-            db.add(addWorkHistory)
-            
-
-            db.commit()
         
         if check_in_out==2:
             
@@ -54,8 +43,10 @@ async def checK_in(
             get_entry.out_latitude=latitude
             get_entry.out_longitude=longitude
         
-            db.commit()
-       
+            
+        db.add(addWorkReport)
+        db.commit()
+    
         
 @router.post("/add_task")
 async def add_task(

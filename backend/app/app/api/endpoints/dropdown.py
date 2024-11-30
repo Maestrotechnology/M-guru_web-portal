@@ -66,3 +66,21 @@ async def dropDownEnquiry(db:Session = Depends(deps.get_db),
     else:
         return {'status':-1,"msg":"Your login session expires.Please login later."}
     
+@router.post("/dropDownTask")
+async def dropDownTask(
+                        db:Session = Depends(deps.get_db),
+                        token:str=Form(...)
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    get_task = db.query(Task).filter(Task.status == 1).order_by(Task.name).all()
+    data_list = []
+    for data in get_task:
+        data_list.append({
+            "id":data.id,
+            "name":data.name
+        })
+    return {"status":1,"msg":"Success","data":data_list}
+    

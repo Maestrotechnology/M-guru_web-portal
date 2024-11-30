@@ -44,12 +44,12 @@ def get_timer(data):
 #     server.quit()
 
 #     return True
-async def send_mail(receiver_email, message):  # Demo
+async def send_mail(receiver_email,subject,message):  # Demo
     sender_email = "maestronithishraj@gmail.com"
     receiver_email = receiver_email
     password = "ycjanameheveewtb"
- 
-    msg = MIMEText(message)
+    
+    msg = MIMEText(message,"html")
  
     msg["From"] = sender_email
     msg["To"] = receiver_email
