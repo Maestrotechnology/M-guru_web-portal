@@ -1,10 +1,14 @@
-def get_email_templete(application,scheduled_date,status):
-    if status == 1:
+from app.models import *
+
+def get_email_templete(application = None,scheduled_date=None,status=None,subject=None):
+    if status == 1:#schedule interview
         message_html = f"""
         <html>
         <body>
-            <h1>Congratulations!</h1>
-            <p>Your interview has been scheduled successfully.</p>
+            <h4>Dear</h4>
+            <br><br>
+            <p>Greetings from Maestro Technology Services Private Limited!</p>
+            <p>We We are delighted to</p>
             <p><strong>Date:</strong> {scheduled_date.strftime('%Y-%m-%d %H:%M:%S')}</p>
             <p>We wish you the best of luck!</p>
         </body>
