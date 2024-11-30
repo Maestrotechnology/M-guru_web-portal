@@ -59,6 +59,12 @@ async def add_task(
 ):
     user = deps.get_user_token(db=db, token=token)
     if user:
+        get_WorkReport=db.query(WorkReport).filter(WorkReport.id==work_report_id,WorkReport.status==1,WorkReport.check_out==None).first()
+        if not get_WorkReport:
+            return {
+        "status" : -1,
+        "msg":"you want to check in"
+    }
         addTaskDetail = TaskDetail(
                 work_report_id=work_report_id,
                 task_id=task_id,
@@ -71,25 +77,41 @@ async def add_task(
 
 
 
-@router.post("/start")
-async def start(
+@router.post("/start_task")
+async def start_task(
     *,
     db: Session = Depends(deps.get_db),
     token: str = Form(...),
-    task: int = Form(None, description="1>task_started,2>task_paused,3>task_restart"),
+    action: int = Form(None, description="1>task_started,2>task_paused"),
     close:int = Form(None),
     work_report_id: int = Form(...),
     task_id:int=Form(...)
     
 ):
     user = deps.get_user_token(db=db, token=token)
+
     if user:
+        get_WorkReport=db.query(WorkReport).filter(WorkReport.id==work_report_id,WorkReport.status==1,WorkReport.check_out==None).first()
+        if not get_WorkReport:
+            return {
+        "status" : -1,
+        "msg":"you want to check in"
+    }
+
        
         total_work_time = 0
         total_break_time = 0
         task_work_time=0
+        get_WorkHistory=db.query(WorkHistory).filter(WorkHistory.status==1)
+        if action == 1:
+            last_break_history =get_WorkHistory.filter(
+                WorkHistory.work_report_id == work_report_id,
+                WorkHistory.breakEnd_time == None
+            ).first()
 
-        if task == 1:
+            if last_break_history:
+                last_break_history.breakEnd_time = datetime.now(settings.tz_IN)
+                db.commit()
            
             addWorkHistory = WorkHistory(
                 work_report_id=work_report_id,
@@ -101,9 +123,9 @@ async def start(
             db.add(addWorkHistory)
             db.commit()
 
-        if task == 2:
+        if action == 2:
            
-            last_work_history = db.query(WorkHistory).filter(
+            last_work_history = get_WorkHistory.filter(
                 WorkHistory.work_report_id == work_report_id,
                 WorkHistory.workEnd_time == None  # Only the ongoing work session
             ).first()
@@ -123,29 +145,8 @@ async def start(
             db.add(addWorkHistory)
             db.commit()
 
-        if task == 3:
-            
-            last_break_history = db.query(WorkHistory).filter(
-                WorkHistory.work_report_id == work_report_id,
-                WorkHistory.break_time != None, 
-                WorkHistory.workEnd_time == None 
-            ).first()
-
-            if last_break_history:
-                last_break_history.workEnd_time = datetime.now(settings.tz_IN)
-                db.commit()
-
-            addWorkHistory = WorkHistory(
-                work_report_id=work_report_id,
-                work_time=datetime.now(settings.tz_IN),
-                status=1,
-                created_at=datetime.now(settings.tz_IN),
-                task_id=task_id
-            )
-            db.add(addWorkHistory)
-            db.commit()
         if close:
-            last_work_history = db.query(WorkHistory).filter(
+            last_work_history = get_WorkHistory.filter(
                 WorkHistory.work_report_id == work_report_id,
                 WorkHistory.workEnd_time == None  # Only the ongoing work session
             ).first()
@@ -155,9 +156,9 @@ async def start(
                 db.commit()
 
         
-        work_history_records = db.query(WorkHistory).filter(WorkHistory.work_report_id == work_report_id).all()
+        work_history_records = get_WorkHistory.filter(WorkHistory.work_report_id == work_report_id).all()
 
-        task_history_records = db.query(WorkHistory).filter(WorkHistory.work_report_id == work_report_id,WorkHistory.task_id==task_id).all()
+        task_history_records = get_WorkHistory.filter(WorkHistory.work_report_id == work_report_id,WorkHistory.task_id==task_id).all()
         for record in work_history_records:
             if record.work_time and record.workEnd_time:
                
@@ -175,7 +176,8 @@ async def start(
                 task_work_time += work_duration.total_seconds()
         
         return {
-            "message": "Task updated successfully.",
+            "status" : 1,
+            "msg": "Task updated successfully.",
             "total_work_time_hours": total_work_time,
             "total_break_time_hours": total_break_time,
             "task_work_time":task_work_time
