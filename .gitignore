@@ -3,3 +3,5 @@ app.egg-info
 app/app/core/config.py
 backend/app/app/core/config.py
 env
+backend/app/app/api/endpoints/__pycache__/
+backend/app/app/models/__pycache__/

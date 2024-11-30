@@ -59,7 +59,7 @@ async def updateBatch(db:Session=Depends(get_db),
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
     check_batch=db.query(Batch).filter(Batch.status==1)
-    get_batch=check_batch.query(Batch).filter(Batch.id==batch_id).first()
+    get_batch=check_batch.filter(Batch.id==batch_id).first()
     if not get_batch:
         return {"status":0,"msg":"Batch Id not found"}
     if name:
@@ -205,7 +205,7 @@ async def listBatchDetails(
             "email": student.email,
             "phone": student.phone,
             "address": student.address,
-            "course": [i.course.name for i in student.enrolled_batches_details],
+            "course": student.course,
             "batch_id": batch_id
         })
         
