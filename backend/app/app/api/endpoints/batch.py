@@ -205,7 +205,7 @@ async def listBatchDetails(
             "email": student.email,
             "phone": student.phone,
             "address": student.address,
-            "course": student.course,
+            "course": student.course.name,
             "batch_id": batch_id
         })
         
