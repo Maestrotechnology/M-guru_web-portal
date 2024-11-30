@@ -30,7 +30,6 @@ async def checK_in(
         if not longitude:
             return {"status": 0, "msg": "Longitude is missing"}
         if check_in_out==1:
-
             addWorkReport = WorkReport(
                 check_in=datetime.now(settings.tz_IN),
                 in_latitude=latitude,
@@ -39,11 +38,7 @@ async def checK_in(
             )
         
         if check_in_out==2:
-            if not latitude:
-                return {"status": 0, "msg": "Latitude is missing"}
-
-            if not longitude:
-                return {"status": 0, "msg": "Longitude is missing"}
+            
             get_entry=db.query(WorkReport).filter(WorkReport.id==WorkReport_id,WorkReport.status==1).first()
             get_entry.out_latitude=latitude
             get_entry.out_longitude=longitude
