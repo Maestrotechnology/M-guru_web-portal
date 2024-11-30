@@ -36,6 +36,17 @@ async def checK_in(
                 in_longitude=longitude,
                 created_at=datetime.now(settings.tz_IN)
             )
+            db.add(addWorkReport)
+            addWorkHistory = WorkHistory(
+                work_report_id=WorkReport_id,
+                break_time=datetime.now(settings.tz_IN),
+                status=1,
+                created_at=datetime.now(settings.tz_IN),
+            )
+            db.add(addWorkHistory)
+            
+
+            db.commit()
         
         if check_in_out==2:
             
@@ -43,10 +54,8 @@ async def checK_in(
             get_entry.out_latitude=latitude
             get_entry.out_longitude=longitude
         
-            
-        db.add(addWorkReport)
-        db.commit()
-    
+            db.commit()
+       
         
 @router.post("/add_task")
 async def add_task(
@@ -90,6 +99,14 @@ async def start(
         task_work_time=0
 
         if task == 1:
+            last_break_history = db.query(WorkHistory).filter(
+                WorkHistory.work_report_id == work_report_id,
+                WorkHistory.breakEnd_time == None
+            ).first()
+
+            if last_break_history:
+                last_break_history.breakEnd_time = datetime.now(settings.tz_IN)
+                db.commit()
            
             addWorkHistory = WorkHistory(
                 work_report_id=work_report_id,
@@ -127,12 +144,12 @@ async def start(
             
             last_break_history = db.query(WorkHistory).filter(
                 WorkHistory.work_report_id == work_report_id,
-                WorkHistory.break_time != None, 
-                WorkHistory.workEnd_time == None 
+                WorkHistory.breakEnd_time ==None, 
+            
             ).first()
 
             if last_break_history:
-                last_break_history.workEnd_time = datetime.now(settings.tz_IN)
+                last_break_history.breakEnd_time = datetime.now(settings.tz_IN)
                 db.commit()
 
             addWorkHistory = WorkHistory(
