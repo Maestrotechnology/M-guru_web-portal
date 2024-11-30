@@ -18,3 +18,4 @@ class Task(Base):
     created_by = relationship("User",back_populates="created_task")
     work_report = relationship("WorkReport",back_populates="task")
     work_history = relationship("WorkHistory",back_populates="task")
+    task_detail = relationship("TaskDetail",back_populates="task")
