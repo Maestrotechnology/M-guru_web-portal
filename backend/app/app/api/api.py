@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import login,application,batch,course,enquiryType,dropdown,login,user,course_material,checkin
+from .endpoints import login,application,batch,course,enquiryType,dropdown,login,user,course_material,checkin,task
 
 api_router = APIRouter()
 
@@ -11,7 +11,8 @@ api_router.include_router(enquiryType.router,tags=["EnquiryType"])
 api_router.include_router(dropdown.router,tags=["Dropdown"])
 api_router.include_router(user.router,tags=["User"])
 api_router.include_router(course_material.router,tags=["Course Material"])
-api_router.include_router(checkin.router,tags=["checkin"])
+api_router.include_router(checkin.router,tags=["Checkin"])
+api_router.include_router(task.router,tags=["Task"])
 
 
 

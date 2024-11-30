@@ -7,6 +7,7 @@ from app.models import Course,ApplicationDetails,EnquiryType,Interview
 from core.config import settings
 from datetime import datetime
 from utils import file_storage,send_mail,get_pagination
+from app.api.endpoints.email_templetes import get_email_templete
 
 router = APIRouter()
 
@@ -109,7 +110,7 @@ async def UpdateApplication(*,
 @router.post("/list_application")
 async def listApplication(*,
                             db: Annotated[Session, Depends(get_db)],
-                            type: Annotated[int, Form(...,description="1->current_applications , 2->interview , 3->attended , 4-> not selected, 5-> selected")],
+                            type: Annotated[int, Form(...,description="1->current_applications , 2->interview , 3->attended , 4-> not selected, 5-> selected, 6->waiting list")],
                             id: Annotated[str, Form(description="multiple ids use (1,2,3) else (1)")] = None,
                             name: Annotated[str, Form()] = None,
                             phone: Annotated[str, Form()] = None,
@@ -138,7 +139,10 @@ async def listApplication(*,
         db_applications = db.query(ApplicationDetails).filter(
             ApplicationDetails.application_status == 1,ApplicationDetails.status==1
         )
-
+    elif type == 6:
+        db_applications = db.query(ApplicationDetails).filter(
+            ApplicationDetails.application_status == 3,ApplicationDetails.status==1
+        )
     else:
         return {"status": 0, "msg":"Invaild type"}
     
@@ -180,6 +184,7 @@ async def listApplication(*,
                 "aptitude_mark": application.interview_details.aptitude_mark if application.interview_details else None,
                 "programming_mark": application.interview_details.programming_mark if application.interview_details else None,
                 "overall_mark": application.interview_details.overall_mark if application.interview_details else None,
+                "application_status": application.application_status
             }
         )
     data=({"page":page,
@@ -223,7 +228,7 @@ async def scheduleInterview(
         if not scheduled_date:
             return {"status":0, "msg":"Please enter interview date"}
         
-        await send_mail(db_application.email,f"Success{scheduled_date}")
+        await send_mail(receiver_email=db_application.email,message=get_email_templete(db_application,scheduled_date,application_status),subject="Application status")
 
         create_interview = Interview(
             scheduled_date=scheduled_date,
@@ -237,12 +242,17 @@ async def scheduleInterview(
         return {"status":1, "msg":"Interview scheduled Successfully"}
     elif application_status==2:
 
-        await send_mail(db_application.email,f"Unsuccess{scheduled_date}")
+        await send_mail(receiver_email=db_application.email,message=get_email_templete(db_application,scheduled_date,application_status),subject="Application status")
         db_application.application_status=2
         db.add(db_application)
         db.commit()
         return {"status":1, "msg":"Mail sent Successfully"}
-        
+    elif application_status==3:
+        db_application.application_status=3
+        db.add(db_application)
+        db.commit()
+        return {"status":1, "msg":"Application successfully moved to waiting list"}
+
 @router.post("/enter_interview_marks")
 async def enterInterviewMarks(
                               db: Annotated[Session, Depends(get_db)],
@@ -252,7 +262,7 @@ async def enterInterviewMarks(
                               aptitude_mark: Annotated[int, Form(...)],
                               programming_mark: Annotated[int, Form(...)],
                               overall_mark: Annotated[int, Form(...)],
-                              application_status: Annotated[int, Form(description="1-> seleted 2->not seleted ")]=None,
+                              application_status: Annotated[int, Form(description="1-> seleted 2->not seleted 3->waiting list")]=None,
                               scholarship: Annotated[int, Form()] = None
 ):
     db_interview_details = db.query(Interview).filter(
@@ -266,6 +276,8 @@ async def enterInterviewMarks(
         db_interview_details.application.scholarship=scholarship
     elif application_status==2:
         db_interview_details.application.application_status=2
+    elif application_status==3:
+        db_interview_details.application.application_status=3
 
     db_interview_details.attended_date = attended_date
     db_interview_details.communication_mark = communication_mark
