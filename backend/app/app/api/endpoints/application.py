@@ -154,7 +154,7 @@ async def listApplication(*,
         db_applications = db.query(ApplicationDetails).filter(
             ApplicationDetails.application_status == 1,ApplicationDetails.status==1
         )
-    elif type == 6:
+    elif type == 6:#waiting list
         db_applications = db.query(ApplicationDetails).filter(
             ApplicationDetails.application_status == 3,ApplicationDetails.status==1
         )
