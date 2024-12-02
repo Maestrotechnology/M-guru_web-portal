@@ -203,10 +203,12 @@ async def listBatchDetails(
             "id": student.id,
             "name": student.name,
             "email": student.email,
+            "username": student.username,
             "phone": student.phone,
             "address": student.address,
             "course": student.course.name,
-            "batch_id": batch_id
+            "batch_id": batch_id,
+            "course_id": student.course_id
         })
         
     data=({"page":page,

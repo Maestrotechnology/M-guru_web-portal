@@ -138,18 +138,18 @@ def get_username(db: Session,type: int):
     if type==2:
         prefix = "MENTOR"
         if not user:
-           return "MENTOR01"
+           return "MENTOR101"
         else:
-            digit = int(user.username[6:] + 1 )
+            digit = int(user.username[6:])+1
             if digit<10:
                 digit = "0"+str(digit) 
             return prefix+str(digit)
     elif type == 3:
         prefix = "MGURU"
         if not user:
-           return "MGURU01"
+           return "MGURU101"
         else:
-            digit = int(user.username[5:] + 1 )
+            digit = int(user.username[5:])+1
             if digit<10:
                 digit = "0"+str(digit) 
             return prefix+str(digit)

@@ -19,7 +19,7 @@ async def createUser(db:Session=Depends(get_db),
                      user_type:int=Form(...,description=("2>Trainer, 3>Student")),
                      email:EmailStr=Form(...),
                      phone:str=Form(...),
-                     address:int=Form(...),
+                     address:str=Form(...),
                      password:str=Form(...),
                      course_id:int=Form(None),
                      batch_id:int=Form(None)
@@ -71,7 +71,7 @@ async def updateUser(
                      userId:int=Form(...),
                      email:EmailStr=Form(...),
                      phone:str=Form(...),
-                     address:int=Form(...),
+                     address:str=Form(...),
                      course_id:int=Form(),
                      ):
     
