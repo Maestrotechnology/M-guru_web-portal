@@ -95,6 +95,8 @@ async def add_task(
     
     else:
         return {'status':-1,"msg":"Your login session expires.Please login later."}
+    
+
 
 
 
@@ -224,5 +226,50 @@ async def start_task(
     
     else:
         return {'status':-1,"msg":"Your login session expires.Please login later."}
+    
+
+
+@router.post("/list_attendance")
+async def list_attendance(
+                    db: Session = Depends(get_db),
+                    token: str = Form(...),
+                    check: int = Form(None,description="1->current,2-> overall"),
+                    page: int = 1,
+                    size: int = 10
+):
+    user = get_user_token(db,token=token)
+    if user:
+        check_attendance=db.query(Attendance).filter(Attendance.status==1)
+        if check==1:
+            get_attendance=check_attendance.filter(Attendance.check_out==None,Attendance.user_id==user.id)
+        if check==2:
+            get_attendance=check_attendance.filter(Attendance.user_id==user.id)
+        
+        totalCount= get_attendance.count()
+        total_page,offset,limit=get_pagination(totalCount,page,size)
+        get_attendance=get_attendance.limit(limit).offset(offset).all()
+
+        data_list = []
+        for data in get_attendance:
+            data_list.append({
+                "attendance_id":data.id,
+                "check_in":data.check_in,
+                "check_out":data.check_out
+            })
+        data=({"page":page,"size":size,"total_page":total_page,
+                    "total_count":totalCount,
+                    "items":data_list})
+        return {"status":1,"msg":"Success","data":data}
+    
+
+
+
+
+        
+
+
+
+    
+    
     
 
