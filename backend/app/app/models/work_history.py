@@ -8,7 +8,7 @@ class WorkHistory(Base):
     __tablename__ = "work_history"
 
     id = Column(Integer,primary_key=True,index=True)
-    work_report_id = Column(Integer,ForeignKey("work_report.id"))
+    attendance_id = Column(Integer,ForeignKey("attendance.id"))
     break_time=Column(DateTime)
     breakEnd_time=Column(DateTime)
     work_time=Column(DateTime)
@@ -17,7 +17,7 @@ class WorkHistory(Base):
     task_id=Column(Integer,ForeignKey("task.id"))
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
-    work_report = relationship("WorkReport",back_populates="work_history")
+    attendance = relationship("Attendance",back_populates="work_history")
     task = relationship("Task",back_populates="work_history")
     
     

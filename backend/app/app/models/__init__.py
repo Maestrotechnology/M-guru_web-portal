@@ -9,7 +9,7 @@ from .api_token import ApiTokens
 from .course_material import CourseMaterial
 from .course_media import CourseMedia
 from .work_history import WorkHistory
-from .workreport import WorkReport
+from .attendance import Attendance
 from .task import Task
 from .task_details import TaskDetail
 
