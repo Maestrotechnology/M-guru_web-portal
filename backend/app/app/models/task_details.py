@@ -7,7 +7,7 @@ from sqlalchemy.dialects.mysql import TINYINT
 class TaskDetail(Base):
     __tablename__ = "task_detail"
     id = Column(Integer,primary_key=True,index=True)
-    work_report_id =Column(Integer,ForeignKey("work_report.id"))
+    attendance_id =Column(Integer,ForeignKey("attendance.id"))
     task_id=Column(Integer,ForeignKey("task.id"))
     user_id=Column(Integer,ForeignKey("user.id"))
     
@@ -16,6 +16,6 @@ class TaskDetail(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
 
-    work_report = relationship("WorkReport",back_populates="task_detail")
+    attendance = relationship("Attendance",back_populates="task_detail")
     user = relationship("User",back_populates="task_detail")
     task = relationship("Task",back_populates="task_detail")

@@ -4,8 +4,8 @@ from app.db.base_class import Base
 from sqlalchemy.dialects.mysql import TINYINT
 
 
-class WorkReport(Base):
-    __tablename__ = "work_report"
+class Attendance(Base):
+    __tablename__ = "attendance"
 
     id = Column(Integer,primary_key=True,index=True)
     check_in=Column(DateTime)
@@ -25,9 +25,9 @@ class WorkReport(Base):
     updated_at = Column(DateTime)
     user_id = Column(Integer,ForeignKey("user.id"))
 
-    users = relationship("User",back_populates="work_report")
-    work_history = relationship("WorkHistory",back_populates="work_report")
+    users = relationship("User",back_populates="attendance")
+    work_history = relationship("WorkHistory",back_populates="attendance")
 
-    task = relationship("Task",back_populates="work_report")
-    task_detail = relationship("TaskDetail",back_populates="work_report")
+    task = relationship("Task",back_populates="attendance")
+    task_detail = relationship("TaskDetail",back_populates="attendance")
     

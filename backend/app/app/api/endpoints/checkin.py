@@ -19,7 +19,7 @@ async def checK_in(
     check_in_out:int = Form(None,description="1 check in 2 check out"),
     latitude:str=Form(None),
     longitude:str=Form(None),
-    WorkReport_id:str=Form(None)
+    Attendance_id:str=Form(None)
 
 ):
     user = deps.get_user_token(db=db, token=token)
@@ -30,43 +30,60 @@ async def checK_in(
         if not longitude:
             return {"status": 0, "msg": "Longitude is missing"}
         if check_in_out==1:
-            addWorkReport = WorkReport(
+            addAttendance = Attendance(
                 check_in=datetime.now(settings.tz_IN),
                 in_latitude=latitude,
                 in_longitude=longitude,
-                created_at=datetime.now(settings.tz_IN)
+                created_at=datetime.now(settings.tz_IN),
+                status=1,
+                user_id=user.id
             )
+            db.add(addAttendance)
+            db.commit()
+            addWorkHistory = WorkHistory(
+                attendance_id=addAttendance.id,
+                break_time=datetime.now(settings.tz_IN),
+                status=1,
+                created_at=datetime.now(settings.tz_IN),
+                
+            )
+            db.add(addWorkHistory)
+            
+
+            db.commit()
         
         if check_in_out==2:
             
-            get_entry=db.query(WorkReport).filter(WorkReport.id==WorkReport_id,WorkReport.status==1).first()
-            get_entry.out_latitude=latitude
-            get_entry.out_longitude=longitude
-        
-            
-        db.add(addWorkReport)
-        db.commit()
+            get_Attendance=db.query(Attendance).filter(Attendance.id==Attendance_id,Attendance.status==1).first()
+            get_Attendance.out_latitude=latitude
+            get_Attendance.out_longitude=longitude
+            get_Attendance.check_out=datetime.now(settings.tz_IN)
+            db.commit()
+        return {"status":1,"msg":"Success"}
     
-        
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
+
+
 @router.post("/add_task")
 async def add_task(
     *,
     db: Session = Depends(deps.get_db),
     token: str = Form(...),
     task_id:int=Form(...), 
-    work_report_id:int=Form(...) ,
+    Attendance_id:int=Form(...) ,
     description:int=Form(None)
 ):
     user = deps.get_user_token(db=db, token=token)
     if user:
-        get_WorkReport=db.query(WorkReport).filter(WorkReport.id==work_report_id,WorkReport.status==1,WorkReport.check_out==None).first()
-        if not get_WorkReport:
+        get_Attendance=db.query(Attendance).filter(Attendance.id==Attendance_id,Attendance.status==1,Attendance.check_out==None).first()
+        if not get_Attendance:
             return {
         "status" : -1,
         "msg":"you want to check in"
     }
         addTaskDetail = TaskDetail(
-                work_report_id=work_report_id,
+                attendance_id=Attendance_id,
                 task_id=task_id,
                 description=description,
                 status=1,
@@ -74,6 +91,10 @@ async def add_task(
             )
         db.add(addTaskDetail)
         db.commit()
+        return {"status":1,"msg":"Success"}
+    
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
 
 
 
@@ -84,15 +105,15 @@ async def start_task(
     token: str = Form(...),
     action: int = Form(None, description="1>task_started,2>task_paused"),
     close:int = Form(None),
-    work_report_id: int = Form(...),
+    Attendance_id: int = Form(...),
     task_id:int=Form(...)
     
 ):
     user = deps.get_user_token(db=db, token=token)
 
     if user:
-        get_WorkReport=db.query(WorkReport).filter(WorkReport.id==work_report_id,WorkReport.status==1,WorkReport.check_out==None).first()
-        if not get_WorkReport:
+        get_Attendance=db.query(Attendance).filter(Attendance.id==Attendance_id,Attendance.status==1,Attendance.check_out==None).first()
+        if not get_Attendance:
             return {
         "status" : -1,
         "msg":"you want to check in"
@@ -103,9 +124,19 @@ async def start_task(
         total_break_time = 0
         task_work_time=0
         get_WorkHistory=db.query(WorkHistory).filter(WorkHistory.status==1)
+        get_data=get_WorkHistory.filter(WorkHistory.attendance_id).order_by(WorkHistory.id.desc()).first()
         if action == 1:
+            if get_data.work_time!=None:
+                return{
+        "status" : -1,
+        "msg":"already started the work"
+    }
+
+            
+
             last_break_history =get_WorkHistory.filter(
-                WorkHistory.work_report_id == work_report_id,
+                WorkHistory.attendance_id == Attendance_id,
+                WorkHistory.break_time!=None,
                 WorkHistory.breakEnd_time == None
             ).first()
 
@@ -114,7 +145,7 @@ async def start_task(
                 db.commit()
            
             addWorkHistory = WorkHistory(
-                work_report_id=work_report_id,
+                attendance_id=Attendance_id,
                 work_time=datetime.now(settings.tz_IN),
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
@@ -124,9 +155,15 @@ async def start_task(
             db.commit()
 
         if action == 2:
+            if get_data.break_time!=None:
+                return{
+        "status" : -1,
+        "msg":"already started the work"
+    }
            
             last_work_history = get_WorkHistory.filter(
-                WorkHistory.work_report_id == work_report_id,
+                WorkHistory.attendance_id == Attendance_id,
+                WorkHistory.work_time!=None,
                 WorkHistory.workEnd_time == None  # Only the ongoing work session
             ).first()
 
@@ -136,7 +173,7 @@ async def start_task(
 
            
             addWorkHistory = WorkHistory(
-                work_report_id=work_report_id,
+                attendance_id=Attendance_id,
                 break_time=datetime.now(settings.tz_IN),
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
@@ -147,27 +184,28 @@ async def start_task(
 
         if close:
             last_work_history = get_WorkHistory.filter(
-                WorkHistory.work_report_id == work_report_id,
+                WorkHistory.attendance_id == Attendance_id,
                 WorkHistory.workEnd_time == None  # Only the ongoing work session
             ).first()
 
             if last_work_history:
                 last_work_history.workEnd_time = datetime.now(settings.tz_IN)
                 db.commit()
+            
 
         
-        work_history_records = get_WorkHistory.filter(WorkHistory.work_report_id == work_report_id).all()
+        work_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == Attendance_id).all()
 
-        task_history_records = get_WorkHistory.filter(WorkHistory.work_report_id == work_report_id,WorkHistory.task_id==task_id).all()
+        task_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == Attendance_id,WorkHistory.task_id==task_id).all()
         for record in work_history_records:
             if record.work_time and record.workEnd_time:
                
                 work_duration = record.workEnd_time - record.work_time
                 total_work_time += work_duration.total_seconds() 
 
-            if record.break_time and record.workEnd_time:
+            if record.break_time and record.breakEnd_time:
                 
-                break_duration = record.workEnd_time - record.break_time
+                break_duration = record.breakEnd_time - record.break_time
                 total_break_time += break_duration.total_seconds() 
         for record in task_history_records:
             if record.work_time and record.workEnd_time:
@@ -182,3 +220,9 @@ async def start_task(
             "total_break_time_hours": total_break_time,
             "task_work_time":task_work_time
         }
+        
+    
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
+    
+
