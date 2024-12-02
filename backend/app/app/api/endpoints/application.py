@@ -3,7 +3,7 @@ from typing import Annotated
 from api.deps import get_db
 from sqlalchemy.orm import Session
 from pydantic import EmailStr
-from app.models import Course,ApplicationDetails,EnquiryType,Interview
+from app.models import *
 from core.config import settings
 from datetime import datetime
 from utils import file_storage,send_mail,get_pagination
@@ -45,6 +45,14 @@ async def createApplication(*,
                             enquiry_id: Annotated[int, Form(...)],
                             course_id: Annotated[int, Form(...)]
 ):
+    
+    
+    get_applications = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.email==email).first()
+    if get_applications:
+        return {"status":0,"msg":"Give Email is already exist"}
+    get_user = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.phone==phone).first()
+    if get_user:
+        return {"status":0,"msg":"Given Phone Number is already exist"}
     check_enquiry_id = db.query(EnquiryType).filter(EnquiryType.id == enquiry_id).first()
     if not check_enquiry_id:
         return {"status":0, "msg":"Invalid enquiry type"}
@@ -83,6 +91,13 @@ async def UpdateApplication(*,
                                                         ).first()
     if not db_application:
         return {"status":0, "msg":"Invalid application"}
+    
+    get_applications = db.query(ApplicationDetails).filter(ApplicationDetails.id!=application_id,ApplicationDetails.status==1,ApplicationDetails.email==email).first()
+    if get_applications:
+        return {"status":0,"msg":"Give Email is already exist"}
+    get_user = db.query(ApplicationDetails).filter(ApplicationDetails.id!=application_id,ApplicationDetails.status==1,ApplicationDetails.phone==phone).first()
+    if get_user:
+        return {"status":0,"msg":"Given Phone Number is already exist"}
     
     check_enquiry_id = db.query(EnquiryType).filter(EnquiryType.id == enquiry_id).first()
     if not check_enquiry_id:
@@ -139,7 +154,7 @@ async def listApplication(*,
         db_applications = db.query(ApplicationDetails).filter(
             ApplicationDetails.application_status == 1,ApplicationDetails.status==1
         )
-    elif type == 6:
+    elif type == 6:#waiting list
         db_applications = db.query(ApplicationDetails).filter(
             ApplicationDetails.application_status == 3,ApplicationDetails.status==1
         )
@@ -184,7 +199,8 @@ async def listApplication(*,
                 "aptitude_mark": application.interview_details.aptitude_mark if application.interview_details else None,
                 "programming_mark": application.interview_details.programming_mark if application.interview_details else None,
                 "overall_mark": application.interview_details.overall_mark if application.interview_details else None,
-                "application_status": application.application_status
+                "application_status": application.application_status,
+                "batch_id": application.batch_id
             }
         )
     data=({"page":page,

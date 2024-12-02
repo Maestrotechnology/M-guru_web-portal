@@ -180,6 +180,10 @@ async def listBatchDetails(
                             db: Session=Depends(deps.get_db),
                             # token:  str=Form(...),
                             batch_id: int = Form(...),
+                            course_id: int = Form(None),
+                            name: str = Form(None),
+                            email: str = Form(None),
+                            phone: str = Form(None),    
                             page: int=1,
                             size: int=10
 ):
@@ -188,8 +192,16 @@ async def listBatchDetails(
         return {"status":0, "msg":"Invalid batch"}
     
     students = db.query(User).filter(
-        User.batch_id==batch_id,User.status==1
+        User.batch_id==batch_id,User.status==1,User.user_type==3
     )
+    if course_id:
+        students = students.filter(User.course_id==course_id)
+    if name:
+        students = students.filter(User.name.like(f"%{name}%"))
+    if email:
+        students = students.filter(User.email.like(f"%{email}%"))
+    if phone:
+        students = students.filter(User.phone.like(f"%{phone}%"))
     
     students = students.order_by(User.id.desc())
     totalCount= students.count()
@@ -203,10 +215,12 @@ async def listBatchDetails(
             "id": student.id,
             "name": student.name,
             "email": student.email,
+            "username": student.username,
             "phone": student.phone,
             "address": student.address,
             "course": student.course.name,
-            "batch_id": batch_id
+            "batch_id": batch_id,
+            "course_id": student.course_id
         })
         
     data=({"page":page,

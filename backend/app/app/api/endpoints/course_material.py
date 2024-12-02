@@ -110,7 +110,7 @@ async def updateCourseMaterials(
     get_course_material.description = description
     get_course_material.name = name
     get_course_material.updated_at = datetime.now(settings.tz_IN)
-
+    db.commit()
     if list_material:
 
         existing_documents = db.query(CourseMedia).filter(
