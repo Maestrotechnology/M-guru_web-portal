@@ -22,8 +22,10 @@ class ApplicationDetails(Base):
     # ForeignKey
     enquiry_id = Column(Integer, ForeignKey("enquiry_type.id"))
     course_id = Column(Integer, ForeignKey("course.id"))
+    batch_id = Column(Integer, ForeignKey("batch.id"))
 
     #relationship
     enquires = relationship("EnquiryType", back_populates="applications")
     courses = relationship("Course", back_populates="applications")
     interview_details = relationship("Interview", back_populates="application",uselist=False)
+    batch = relationship("Batch",back_populates="applications",uselist=False)

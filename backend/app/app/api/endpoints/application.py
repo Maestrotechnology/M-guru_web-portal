@@ -199,7 +199,8 @@ async def listApplication(*,
                 "aptitude_mark": application.interview_details.aptitude_mark if application.interview_details else None,
                 "programming_mark": application.interview_details.programming_mark if application.interview_details else None,
                 "overall_mark": application.interview_details.overall_mark if application.interview_details else None,
-                "application_status": application.application_status
+                "application_status": application.application_status,
+                "batch_id": application.batch_id
             }
         )
     data=({"page":page,
