@@ -10,7 +10,9 @@ class TaskDetail(Base):
     attendance_id =Column(Integer,ForeignKey("attendance.id"))
     task_id=Column(Integer,ForeignKey("task.id"))
     user_id=Column(Integer,ForeignKey("user.id"))
-    
+    expected_time=Column(DateTime)
+    priority=Column(TINYINT,comment="1-> High 2 -> medium 3 -> low" )
+    complete_status = Column(TINYINT, comment="1-> complete 2 -> not complete")
     description = Column(Text)
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)

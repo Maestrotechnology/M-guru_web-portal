@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash,verify_password
 from datetime import datetime
 from app.utils import *
-from sqlalchemy import or_
+from sqlalchemy import or_,cast,Date
 import random
 router = APIRouter()
 dt = str(int(datetime.utcnow().timestamp()))
@@ -91,12 +91,21 @@ async def login(*,db: Session = Depends(deps.get_db),
 
             db.add(addToken)
             db.commit()
+            checkTodayCheckIN = (
+            db.query(Attendance)
+            .filter(
+                Attendance.user_id == user.id,
+                cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
+            )
+            .first()
+        )
             return {'status':1,
                 'token': key,
                 "user_id":user.id,
                 "user_type":user.user_type,
                 'msg': 'Successfully LoggedIn.',  
-                'status': 1
+                'status': 1,
+                "checkin_time":checkTodayCheckIN.check_in if checkTodayCheckIN else None
                 }
 
         

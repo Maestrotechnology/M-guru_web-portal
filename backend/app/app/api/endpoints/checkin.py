@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
+from sqlalchemy import Date,cast
+
 from app.models import ApiTokens,User
 from app.api import deps
 from app.core.config import settings
@@ -30,6 +32,18 @@ async def checK_in(
         if not longitude:
             return {"status": 0, "msg": "Longitude is missing"}
         if check_in_out==1:
+            checkTodayCheckIN = (
+            db.query(Attendance)
+            .filter(
+                Attendance.user_id == user.id,
+                cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
+            )
+            .first()
+        )
+            if checkTodayCheckIN:
+                return {"status":-1,"msg":"already you cheked in today"}
+
+
             addAttendance = Attendance(
                 check_in=datetime.now(settings.tz_IN),
                 in_latitude=latitude,
@@ -71,8 +85,11 @@ async def add_task(
     db: Session = Depends(deps.get_db),
     token: str = Form(...),
     task_id:int=Form(...), 
+    task_detail:int=Form(...),
     Attendance_id:int=Form(...) ,
-    description:int=Form(None)
+    expected_time:time=Form(...),
+    priority:int=Form(...,description="1-> High 2 -> medium 3 -> low"),
+    description:str=Form(None)
 ):
     user = deps.get_user_token(db=db, token=token)
     if user:
@@ -87,7 +104,10 @@ async def add_task(
                 task_id=task_id,
                 description=description,
                 status=1,
-                created_at=datetime.now(settings.tz_IN)
+                created_at=datetime.now(settings.tz_IN),
+                user_id=user.id,
+                expected_time=expected_time,
+                priority=priority
             )
         db.add(addTaskDetail)
         db.commit()
@@ -97,6 +117,41 @@ async def add_task(
         return {'status':-1,"msg":"Your login session expires.Please login later."}
     
 
+@router.post("/list_task_detail")
+async def list_task_detail(
+                    db: Session = Depends(get_db),
+                    token: str = Form(...),
+                    page: int = 1,
+                    size: int = 10
+):
+    user = get_user_token(db,token=token)
+    if user:
+        priority=["","High","medium","low"]
+        get_taskDetail=db.query(TaskDetail).filter(TaskDetail.user_id==user.id,
+                                                   TaskDetail.user_id==user.id,
+                                                   TaskDetail.status==1,
+                                                   ).order_by(TaskDetail.id.desc())
+        totalCount= get_taskDetail.count()
+        total_page,offset,limit=get_pagination(totalCount,page,size)
+        get_taskDetail=get_taskDetail.limit(limit).offset(offset).all()
+
+        data_list = []
+        for data in get_taskDetail:
+            data_list.append({
+                "TaskDetail_id":data.id,
+                "attendance_id":data.attendance_id,
+                "user_id":data.user_id,
+                "user_name":data.user.username,
+                "task_id":data.task_id,
+                "task_name":data.task.name,
+                "expected_time":data.expected_time,
+                "priority_id":data.priority,
+                "priority_name":priority[data.priority]
+            })
+        data=({"page":page,"size":size,"total_page":total_page,
+                    "total_count":totalCount,
+                    "items":data_list})
+        return {"status":1,"msg":"Success","data":data}
 
 
 
@@ -241,7 +296,16 @@ async def list_attendance(
     if user:
         check_attendance=db.query(Attendance).filter(Attendance.status==1)
         if check==1:
-            get_attendance=check_attendance.filter(Attendance.check_out==None,Attendance.user_id==user.id)
+            get_attendance = (
+            check_attendance
+            .filter(
+                Attendance.user_id == user.id,
+                cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
+            ).first() )
+            if get_attendance:
+                get_task=db.query(TaskDetail).filter(TaskDetail.status==1,TaskDetail.attendance_id==get_attendance.id).order_by(TaskDetail.id.desc()).first()
+                return {'status':1,"msg":"Success","attendance_id":get_attendance.id,"check_in":get_attendance.check_in,"task_id":get_task.task_id if get_task else None }
+
         if check==2:
             get_attendance=check_attendance.filter(Attendance.user_id==user.id)
         
