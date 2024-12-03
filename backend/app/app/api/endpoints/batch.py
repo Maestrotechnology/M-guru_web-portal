@@ -118,7 +118,8 @@ async def listBatch(db:Session=Depends(deps.get_db),
                 "Batch_name":row.name,
                 "start_date":row.start_date.strftime("%d/%m/%Y"),
                 "end_date":row.end_date.strftime("%d/%m/%Y"),
-                "fee":row.fee
+                "fee":row.fee,
+                "batch_count":len(row.users)
             })
         data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,
@@ -170,6 +171,7 @@ async def allocateBatch(
         batch_id = batch_id,
         course_id = course_id
     )
+    application_data.batch_id = batch_id
     db.add(create_student)
     db.commit()
 
