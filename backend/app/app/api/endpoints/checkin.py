@@ -87,7 +87,7 @@ async def add_task(
     task_id:int=Form(...), 
     task_detail:int=Form(...),
     Attendance_id:int=Form(...) ,
-    expected_time:time=Form(...),
+    expected_time:str=Form(...),
     priority:int=Form(...,description="1-> High 2 -> medium 3 -> low"),
     description:str=Form(None)
 ):
