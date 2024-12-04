@@ -20,3 +20,4 @@ class Task(Base):
     work_history = relationship("WorkHistory",back_populates="task")
     task_detail = relationship("TaskDetail",back_populates="task")
     scores = relationship("Score",back_populates="task")
+    project_details = relationship("StudentProjectDetail", back_populates="task")
