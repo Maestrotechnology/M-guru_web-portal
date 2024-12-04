@@ -45,25 +45,107 @@ async def listStudentProject(
                                 batch_id: int = Form(None),
                                 course_id: int = Form(None),
                                 task_id: int = Form(None),
+                                page: int = Form(1),
+                                size: int = Form(10)
 ):
     user = get_user_token(db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
-    get_students = db.query(User).filter(User.status==1)
+    
+    if user.user_type == 3:
+        get_projects = db.query(StudentProjectDetail).filter(StudentProjectDetail.status==1,StudentProjectDetail.user_id==user.id)
+
     if user.user_type in [1,2]:
         if not batch_id:
             return {"status":0,"msg":"batch is required"}
-        get_students = get_students.filter(User.batch_id == batch_id)
+        get_projects = db.query(
+            StudentProjectDetail
+        ).join(User).filter(StudentProjectDetail.status == 1,User.batch_id==batch_id)
         if course_id:
-            get_students = get_students.filter(User.course_id == course_id)
-        if task_id:
-            get_students = get_students.join(
-                StudentProjectDetail,
-                StudentProjectDetail.user_id == User.id
-            ).filter(
-                StudentProjectDetail.task_id == task_id
-            )
+            get_projects = get_projects.filter(User.course_id==course_id)
         
-        
+
+    get_project_count = get_projects.count()
+    totalPages,offset,limit = get_pagination(get_project_count,page,size)
+    get_projects = get_projects.order_by(StudentProjectDetail.id).limit(limit).offset(offset).all()
+
+    data_list = []
+
+    for project in get_projects:
+        data_list.append({
+            "id": project.id,
+            "project_start_date": project.project_start_date,
+            "project_end_date": project.project_end_date,
+            "description": project.description,
+            "task_id": project.task_id,
+            "task": project.task.name,
+            "user_id": project.user_id,
+            "user_name": project.student.name,
+            "project" : f"{settings.BASEURL}/{project.project_url}",
+            "created_at": project.created_at
+        })
+
+    data=({"page":page,
+           "size":size,
+           "total_page":totalPages,
+           "total_count":get_project_count,
+           "items":data_list})
+            
+    return ({"status":1,"msg":"Success.","data":data})
+
+@router.post("/update_project")
+async def updateProject(
+                            db: Session = Depends(get_db),
+                            token: str = Form(...),
+                            project_id: int = Form(...),
+                            project_start_date: datetime = Form(...),
+                            project_end_date: datetime = Form(...),
+                            description: str = Form(None),
+                            project_url: UploadFile = File(None),
+                            task_id: int = Form(...)
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+
+    get_project = db.query(StudentProjectDetail).filter(
+        StudentProjectDetail.id == project_id,StudentProjectDetail.status==1
+    ).first()
+
+    if not get_project:
+        return {"status":0,"msg":"Project not found"}
+    if project_url:
+        file_path, file_url = file_storage(project_url, project_url.filename)
+        get_project.project_url=file_url
+    if description:
+        get_project.description = description
+
+    get_project.project_start_date = project_start_date
+    get_project.project_end_date = project_end_date
+    get_project.task_id = task_id
+
+    return {"status":1, "msg":"Successfully project updateted"}
+
+@router.post("/delete_project")
+async def deleteProject(
+                            db: Session = Depends(get_db),
+                            token: str = Form(...),
+                            project_id: int = Form(...)
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    get_project = db.query(StudentProjectDetail).filter(
+        StudentProjectDetail.id == project_id,StudentProjectDetail.status==1
+    ).first()
+
+    if not get_project:
+        return {"status":0,"msg":"Project not found"}
+    
+    get_project.status = -1
+    db.commit()
+    return {"status":1,"msg":"Project successfully deleted"}
+
 
         
