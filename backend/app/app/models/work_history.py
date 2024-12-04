@@ -13,11 +13,13 @@ class WorkHistory(Base):
     breakEnd_time=Column(DateTime)
     work_time=Column(DateTime)
     workEnd_time=Column(DateTime)
+    Ispaused = Column(TINYINT, comment="1-> yes 2 -> no")
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
-    task_id=Column(Integer,ForeignKey("task.id"))
+    taskDetail_id=Column(Integer,ForeignKey("task_detail.id"))
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     attendance = relationship("Attendance",back_populates="work_history")
-    task = relationship("Task",back_populates="work_history")
+    task_detail = relationship("TaskDetail",back_populates="work_history")
+
     
     

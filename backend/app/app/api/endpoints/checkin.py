@@ -41,7 +41,7 @@ async def checK_in(
             .first()
         )
             if checkTodayCheckIN:
-                return {"status":-1,"msg":"already you cheked in today"}
+                return {"status":0,"msg":"already you cheked in today"}
 
 
             addAttendance = Attendance(
@@ -96,7 +96,7 @@ async def add_task(
         get_Attendance=db.query(Attendance).filter(Attendance.id==Attendance_id,Attendance.status==1,Attendance.check_out==None).first()
         if not get_Attendance:
             return {
-        "status" : -1,
+        "status" : 0,
         "msg":"you want to check in"
     }
         addTaskDetail = TaskDetail(
@@ -163,16 +163,23 @@ async def start_task(
     action: int = Form(None, description="1>task_started,2>task_paused"),
     close:int = Form(None),
     Attendance_id: int = Form(...),
-    task_id:int=Form(...)
+    taskdetail_id:int=Form(...)
     
 ):
     user = deps.get_user_token(db=db, token=token)
 
     if user:
-        get_Attendance=db.query(Attendance).filter(Attendance.id==Attendance_id,Attendance.status==1,Attendance.check_out==None).first()
-        if not get_Attendance:
+        checkTodayCheckIN = (
+            db.query(Attendance)
+            .filter(
+                Attendance.user_id == user.id,
+                cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
+            )
+            .first()
+        )
+        if not checkTodayCheckIN:
             return {
-        "status" : -1,
+        "status" : 0,
         "msg":"you want to check in"
         }
 
@@ -185,7 +192,7 @@ async def start_task(
         if action == 1:
             if get_data.work_time!=None:
                 return{
-                        "status" : -1,
+                        "status" : 0,
                         "msg":"already started the work"
                        }
 
@@ -206,7 +213,8 @@ async def start_task(
                 work_time=datetime.now(settings.tz_IN),
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
-                task_id=task_id
+                taskDetail_id=taskdetail_id,
+                Ispaused=2
             )
             db.add(addWorkHistory)
             db.commit()
@@ -214,7 +222,7 @@ async def start_task(
         if action == 2:
             if get_data.break_time!=None:
                 return{
-                        "status" : -1,
+                        "status" : 0,
                         "msg":"already started the work"
                     }
            
@@ -227,6 +235,7 @@ async def start_task(
             if last_work_history:
                 last_work_history.workEnd_time = datetime.now(settings.tz_IN)
                 db.commit()
+        
 
            
             addWorkHistory = WorkHistory(
@@ -234,7 +243,37 @@ async def start_task(
                 break_time=datetime.now(settings.tz_IN),
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
-                task_id=task_id
+                taskDetail_id=taskdetail_id,
+                Ispaused=1
+            )
+            db.add(addWorkHistory)
+            db.commit()
+        if action == 3:
+            if get_data.work_time!=None:
+                return{
+                        "status" : 0,
+                        "msg":"already paused the work"
+                       }
+
+            
+
+            last_break_history =get_WorkHistory.filter(
+                WorkHistory.attendance_id == Attendance_id,
+                WorkHistory.break_time!=None,
+                WorkHistory.breakEnd_time == None
+            ).first()
+
+            if last_break_history:
+                last_break_history.breakEnd_time = datetime.now(settings.tz_IN)
+                db.commit()
+           
+            addWorkHistory = WorkHistory(
+                attendance_id=Attendance_id,
+                work_time=datetime.now(settings.tz_IN),
+                status=1,
+                created_at=datetime.now(settings.tz_IN),
+                taskDetail_id=taskdetail_id,
+                Ispaused=1
             )
             db.add(addWorkHistory)
             db.commit()
@@ -253,7 +292,7 @@ async def start_task(
         
         work_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == Attendance_id).all()
 
-        task_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == Attendance_id,WorkHistory.task_id==task_id).all()
+        task_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == Attendance_id,WorkHistory.taskDetail_id==taskdetail_id).all()
         for record in work_history_records:
             if record.work_time and record.workEnd_time:
                
@@ -269,13 +308,12 @@ async def start_task(
                
                 work_duration = record.workEnd_time - record.work_time
                 task_work_time += work_duration.total_seconds()
-        
         return {
             "status" : 1,
             "msg": "Task updated successfully.",
-            "total_work_time_hours": total_work_time,
-            "total_break_time_hours": total_break_time,
-            "task_work_time":task_work_time
+            "total_work_time_hours": int(total_work_time),
+            "total_break_time_hours": int(total_break_time),
+            "task_work_time":int(task_work_time)
         }
         
     
@@ -303,66 +341,66 @@ async def list_attendance(
                 Attendance.user_id == user.id,
                 cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
             ).first() )
+            
             if get_attendance:
+                get_pasued=get_WorkHistory.filter(WorkHistory.attendance_id==get_attendance.id).order_by(WorkHistory.id.desc()).first()
                 total_work_time = 0
                 total_break_time = 0
                 task_work_time=0
-                print(get_attendance.id,11111111111111111)
+                
                 get_TaskDetail=db.query(TaskDetail).filter(TaskDetail.status==1,TaskDetail.attendance_id==get_attendance.id).order_by(TaskDetail.id.desc()).first()
+                
+                work_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == get_attendance.id).all()
+                for record in work_history_records:
+                    if record.work_time and record.workEnd_time:
+                    
+                        work_duration = record.workEnd_time - record.work_time
+                        total_work_time += work_duration.total_seconds() 
+
+                    if record.break_time and record.breakEnd_time:
+                        
+                        break_duration = record.breakEnd_time - record.break_time
+                        total_break_time += break_duration.total_seconds() 
                 if get_TaskDetail:
-                    work_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == get_attendance.id).all()
-                    for record in work_history_records:
+                   
+                    task_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == get_attendance.id,WorkHistory.taskDetail_id==get_TaskDetail.id).all()
+                    for record in task_history_records:
                         if record.work_time and record.workEnd_time:
                         
                             work_duration = record.workEnd_time - record.work_time
-                            total_work_time += work_duration.total_seconds() 
-
-                        if record.break_time and record.breakEnd_time:
-                            
-                            break_duration = record.breakEnd_time - record.break_time
-                            total_break_time += break_duration.total_seconds() 
-                    print(get_TaskDetail.id)
-                    if  get_TaskDetail.task_id!=None:
-                        task_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == get_attendance.id,WorkHistory.task_id==get_TaskDetail.task_id).all()
-                        for record in task_history_records:
-                            if record.work_time and record.workEnd_time:
-                            
-                                work_duration = record.workEnd_time - record.work_time
-                                task_work_time += work_duration.total_seconds()
-        
+                            task_work_time += work_duration.total_seconds()
+               
                 return {'status':1,
                         "msg":"Success",
                         "attendance_id":get_attendance.id,
                         "check_in":get_attendance.check_in,"TaskDetail_id":get_TaskDetail.id if get_TaskDetail else None ,
-                        "total_work_time_hours": total_work_time,
-                        "total_break_time_hours": total_break_time,
-                        "task_work_time":task_work_time,
+                        "total_work_time_hours": int(total_work_time),
+                        "total_break_time_hours": int(total_break_time),
+                        "task_work_time":int(task_work_time),
+                        "Ispaused":get_pasued.Ispaused,
+                        "taskId": get_TaskDetail.task_id  if get_TaskDetail else None
                         }
-
+            else:
+                return {'status':0,"msg":"you want to check_in"}
         if check==2:
             get_attendance=check_attendance.filter(Attendance.user_id==user.id)
         
-        totalCount= get_attendance.count()
-        total_page,offset,limit=get_pagination(totalCount,page,size)
-        get_attendance=get_attendance.limit(limit).offset(offset).all()
+            totalCount= get_attendance.count()
+            total_page,offset,limit=get_pagination(totalCount,page,size)
+            get_attendance=get_attendance.limit(limit).offset(offset).all()
 
-        data_list = []
-        for data in get_attendance:
-            data_list.append({
-                "attendance_id":data.id,
-                "check_in":data.check_in,
-                "check_out":data.check_out
-            })
-        data=({"page":page,"size":size,"total_page":total_page,
-                    "total_count":totalCount,
-                    "items":data_list})
-        return {"status":1,"msg":"Success","data":data}
+            data_list = []
+            for data in get_attendance:
+                data_list.append({
+                    "attendance_id":data.id,
+                    "check_in":data.check_in,
+                    "check_out":data.check_out
+                })
+            data=({"page":page,"size":size,"total_page":total_page,
+                        "total_count":totalCount,
+                        "items":data_list})
+            return {"status":1,"msg":"Success","data":data}
     
-
-
-
-
-        
 
 
 
