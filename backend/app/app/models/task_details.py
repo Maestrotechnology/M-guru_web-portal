@@ -14,6 +14,7 @@ class TaskDetail(Base):
     priority=Column(TINYINT,comment="1-> High 2 -> medium 3 -> low" )
     complete_status = Column(TINYINT, comment="1-> complete 2 -> not complete")
     description = Column(Text)
+    task_description = Column(String(250))
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
