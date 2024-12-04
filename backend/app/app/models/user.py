@@ -32,17 +32,9 @@ class User(Base):
     materials = relationship("CourseMaterial",back_populates="created_by")
     attendance = relationship("Attendance", back_populates="users")
     created_task = relationship("Task",back_populates="created_by")
-    # enrolled_batches_details = relationship(
-    #     "BatchCourseDetails",
-    #     uselist=False,
-    #     foreign_keys="[BatchCourseDetails.student_id]",
-    #     back_populates="student",
-    # )
-    # assigned_batches_details = relationship(
-    #     "BatchCourseDetails",
-    #     foreign_keys="[BatchCourseDetails.trainer_id]",
-    #     back_populates="trainer",
-    # )
+    scores_as_student = relationship("Score", foreign_keys="[Score.student_id]", back_populates="student")
+    scores_as_teacher = relationship("Score", foreign_keys="[Score.teacher_id]", back_populates="teacher")
+  
     task_detail = relationship("TaskDetail",back_populates="user")
     api_tokens=relationship("ApiTokens",back_populates="user")
 
