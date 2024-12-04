@@ -21,3 +21,6 @@ class TaskDetail(Base):
     attendance = relationship("Attendance",back_populates="task_detail")
     user = relationship("User",back_populates="task_detail")
     task = relationship("Task",back_populates="task_detail")
+    work_history = relationship("WorkHistory",back_populates="task_detail")
+
+
