@@ -186,8 +186,8 @@ async def listBatchDetails(
                             name: str = Form(None),
                             email: str = Form(None),
                             phone: str = Form(None),    
-                            page: int=1,
-                            size: int=10
+                            page: int= Form(1),
+                            size: int= Form(10)
 ):
     batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status==1).first()
     if not batch_data:

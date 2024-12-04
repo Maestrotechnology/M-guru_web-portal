@@ -12,5 +12,6 @@ from .work_history import WorkHistory
 from .attendance import Attendance
 from .task import Task
 from .task_details import TaskDetail
+from .score import Score
 
 

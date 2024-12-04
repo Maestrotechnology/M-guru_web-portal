@@ -11,7 +11,7 @@ class Score(Base):
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
-
+    mark = Column(Integer)
     # ForeignKey
     task_id = Column(Integer,ForeignKey("task.id"))
     student_id = Column(Integer, ForeignKey("user.id"))
