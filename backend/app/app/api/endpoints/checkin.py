@@ -85,7 +85,7 @@ async def add_task(
     db: Session = Depends(deps.get_db),
     token: str = Form(...),
     task_id:int=Form(...), 
-    task_detail:int=Form(...),
+    task_detail:str=Form(...),
     Attendance_id:int=Form(...) ,
     expected_time:str=Form(...),
     priority:int=Form(...,description="1-> High 2 -> medium 3 -> low"),
@@ -295,6 +295,7 @@ async def list_attendance(
     user = get_user_token(db,token=token)
     if user:
         check_attendance=db.query(Attendance).filter(Attendance.status==1)
+        get_WorkHistory=db.query(WorkHistory).filter(WorkHistory.status==1)
         if check==1:
             get_attendance = (
             check_attendance
@@ -303,8 +304,40 @@ async def list_attendance(
                 cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
             ).first() )
             if get_attendance:
-                get_task=db.query(TaskDetail).filter(TaskDetail.status==1,TaskDetail.attendance_id==get_attendance.id).order_by(TaskDetail.id.desc()).first()
-                return {'status':1,"msg":"Success","attendance_id":get_attendance.id,"check_in":get_attendance.check_in,"task_id":get_task.task_id if get_task else None }
+                total_work_time = 0
+                total_break_time = 0
+                task_work_time=0
+                print(get_attendance.id,11111111111111111)
+                get_TaskDetail=db.query(TaskDetail).filter(TaskDetail.status==1,TaskDetail.attendance_id==get_attendance.id).order_by(TaskDetail.id.desc()).first()
+                if get_TaskDetail:
+                    work_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == get_attendance.id).all()
+                    for record in work_history_records:
+                        if record.work_time and record.workEnd_time:
+                        
+                            work_duration = record.workEnd_time - record.work_time
+                            total_work_time += work_duration.total_seconds() 
+
+                        if record.break_time and record.breakEnd_time:
+                            
+                            break_duration = record.breakEnd_time - record.break_time
+                            total_break_time += break_duration.total_seconds() 
+                    print(get_TaskDetail.id)
+                    if  get_TaskDetail.task_id!=None:
+                        task_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == get_attendance.id,WorkHistory.task_id==get_TaskDetail.task_id).all()
+                        for record in task_history_records:
+                            if record.work_time and record.workEnd_time:
+                            
+                                work_duration = record.workEnd_time - record.work_time
+                                task_work_time += work_duration.total_seconds()
+        
+                return {'status':1,
+                        "msg":"Success",
+                        "attendance_id":get_attendance.id,
+                        "check_in":get_attendance.check_in,"TaskDetail_id":get_TaskDetail.id if get_TaskDetail else None ,
+                        "total_work_time_hours": total_work_time,
+                        "total_break_time_hours": total_break_time,
+                        "task_work_time":task_work_time,
+                        }
 
         if check==2:
             get_attendance=check_attendance.filter(Attendance.user_id==user.id)
