@@ -8,13 +8,20 @@ class Task(Base):
 
     id = Column(Integer, primary_key=True,index=True)
     name = Column(String(50))
-    status = Column(TINYINT, comment="1-> active , 2-> inactive")
+    task_report_url = Column(String(255))
+    from_date = Column(DateTime)
+    end_date = Column(DateTime)
+    description = Column(String(250))
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
-
+    status = Column(TINYINT, comment="1-> active , 2-> inactive")
     # ForeignKey
+    course_id = Column(Integer, ForeignKey("course.id"))
+    batch_id = Column(Integer, ForeignKey("batch.id"))
     created_by_user_id = Column(Integer, ForeignKey("user.id"))
     # relationship
+    course = relationship("Course",back_populates="task")
+    batch = relationship("Batch",back_populates="task")
     created_by = relationship("User",back_populates="created_task")
     attendance = relationship("Attendance",back_populates="task")
     task_detail = relationship("TaskDetail",back_populates="task")

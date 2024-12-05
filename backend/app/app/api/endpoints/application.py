@@ -73,7 +73,7 @@ async def createApplication(*,
     return {"status":1,"msg":"Successfully submitted"}
 
 @router.post("/update_application")
-async def UpdateApplication(*,
+async def updateApplication(*,
                             db: Annotated[Session, Depends(get_db)],
                             application_id: Annotated[int, Form(...)],
                             name: Annotated[str, Form(...)],

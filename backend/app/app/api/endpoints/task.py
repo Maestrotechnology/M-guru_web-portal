@@ -15,18 +15,34 @@ router = APIRouter()
 async def createTask(
                       db: Session = Depends(get_db),
                       token: str = Form(...),
-                      name: str = Form(...)
+                      name: str = Form(...),
+                      task_report_url: UploadFile = File(None),
+                      from_date: datetime = Form(None),
+                      end_date: datetime = Form(None),
+                      description: str = Form(None),
+                      course_id: int = Form(None),
+                      batch_id: int = Form(None)
 ):
     user = get_user_token(db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
     
+    if task_report_url:
+        file_path, file_url = file_storage(task_report_url, task_report_url.filename)
+    else:
+        file_url = None
     task = Task(
-        name=name,
-        status=1,
-        created_at=datetime.now(settings.tz_IN),
-        updated_at=datetime.now(settings.tz_IN),
-        created_by_user_id=user.id
+            name=name,
+            status=1,
+            task_report_url = file_url,
+            from_date = from_date,
+            end_date = end_date,
+            description = description,
+            created_at=datetime.now(settings.tz_IN),
+            updated_at=datetime.now(settings.tz_IN),
+            created_by_user_id=user.id,
+            course_id = course_id,
+            batch_id = batch_id
         )
     db.add(task)
     db.commit()
@@ -39,7 +55,9 @@ async def listTask(
                     name: str = Form(None),
                     task_id: int = Form(None),
                     page: int = 1,
-                    size: int = 10
+                    size: int = 10,
+                    course_id: int = Form(None),
+                    batch_id: int = Form(None)
 ):
     user = get_user_token(db,token=token)
     if not user:
@@ -52,6 +70,10 @@ async def listTask(
         get_task = get_task.filter(Task.id == task_id)
     if name:
         get_task = get_task.filter(Task.name.like(f"%{name}%"))
+    if course_id:
+        get_task = get_task.filter(Task.course_id == course_id)
+    if batch_id:
+        get_task = get_task.filter(Task.batch_id == batch_id)
 
     get_task = get_task.order_by(Task.name)
     totalCount= get_task.count()
@@ -63,7 +85,15 @@ async def listTask(
         data_list.append({
             "id":data.id,
             "created_by":data.created_by.name,
-            "name":data.name
+            "name":data.name,
+            "task_report_url": f"{settings}/data.task_report_url" if data.task_report_url else None,
+            "from_date": data.from_date,
+            "end_date": data.end_date,
+            "description": data.description,
+            "course_id": data.course_id,
+            "course name": data.course.name if data.course else None,
+            "batch_id": data.batch_id,
+            "batch name": data.batch.name if data.batch else None
         })
     data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,
@@ -75,7 +105,13 @@ async def updateTask(
                       db: Session = Depends(get_db),
                       token: str = Form(...),
                       task_id: int = Form(...),
-                      name: str = Form(...) 
+                      name: str = Form(...),
+                      task_report_url: UploadFile = File(None),
+                      from_date: datetime = Form(None),
+                      end_date: datetime = Form(None),
+                      description: str = Form(None),
+                      course_id: int = Form(None),
+                      batch_id: int = Form(None) 
 ):
     user = get_user_token(db,token=token)
     if not user:
@@ -84,6 +120,15 @@ async def updateTask(
     get_task = db.query(Task).filter(Task.status==1,Task.id == task_id).first()
     if not get_task:
         return {"status":0,"msg":"Task not found"}
+    
+    if task_report_url:
+        file_path, file_url = file_storage(task_report_url, task_report_url.filename)
+        get_task.task_report_url = file_url
+    get_task.from_date = from_date
+    get_task.end_date = end_date
+    get_task.description = description
+    get_task.course_id = course_id
+    get_task.batch_id = batch_id
     get_task.name = name
     db.add(get_task)
     db.commit()

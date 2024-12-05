@@ -17,4 +17,5 @@ class Course(Base):
     applications = relationship("ApplicationDetails",back_populates="courses")
     users = relationship("User",back_populates="course")
     materials = relationship("CourseMaterial",back_populates="course")
-    # batch_details = relationship("BatchCourseDetails", back_populates="course")
+    task = relationship("Task", back_populates="course")
+
