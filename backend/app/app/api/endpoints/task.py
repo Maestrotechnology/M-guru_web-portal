@@ -65,6 +65,9 @@ async def listTask(
     
 
     get_task = db.query(Task).filter(Task.status == 1)
+    if user.user_type == 3:
+        if not course_id or not batch_id:
+            return {"status":0, "msg":"Course and batch is required"}
 
     if task_id:
         get_task = get_task.filter(Task.id == task_id)
