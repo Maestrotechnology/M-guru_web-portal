@@ -43,7 +43,7 @@ async def checK_in(
             if checkTodayCheckIN:
                 return {"status":0,"msg":"already you cheked in today"}
 
-
+                                  
             addAttendance = Attendance(
                 check_in=datetime.now(settings.tz_IN),
                 in_latitude=latitude,
@@ -59,13 +59,15 @@ async def checK_in(
                 break_time=datetime.now(settings.tz_IN),
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
+                Ispaused=2
+
                 
             )
             db.add(addWorkHistory)
             
 
             db.commit()
-        
+            return {"status":1,"msg":"check In sucessfully"}
         if check_in_out==2:
             
             get_Attendance=db.query(Attendance).filter(Attendance.id==Attendance_id,Attendance.status==1).first()
@@ -73,7 +75,7 @@ async def checK_in(
             get_Attendance.out_longitude=longitude
             get_Attendance.check_out=datetime.now(settings.tz_IN)
             db.commit()
-        return {"status":1,"msg":"Success"}
+            return {"status":1,"msg":"check out sucessfully"}
     
     else:
         return {'status':-1,"msg":"Your login session expires.Please login later."}
@@ -93,12 +95,16 @@ async def add_task(
 ):
     user = deps.get_user_token(db=db, token=token)
     if user:
-        get_Attendance=db.query(Attendance).filter(Attendance.id==Attendance_id,Attendance.status==1,Attendance.check_out==None).first()
-        if not get_Attendance:
-            return {
-        "status" : 0,
-        "msg":"you want to check in"
-    }
+        checkTodayCheckIN = (
+            db.query(Attendance)
+            .filter(
+                Attendance.user_id == user.id,Attendance.id==Attendance_id,
+                cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
+            )
+            .first()
+        )
+        if  not checkTodayCheckIN:
+            return {"status":0,"msg":"You want to check In"}
         addTaskDetail = TaskDetail(
                 attendance_id=Attendance_id,
                 task_id=task_id,
@@ -107,11 +113,12 @@ async def add_task(
                 created_at=datetime.now(settings.tz_IN),
                 user_id=user.id,
                 expected_time=expected_time,
+                task_description=task_detail,
                 priority=priority
             )
         db.add(addTaskDetail)
         db.commit()
-        return {"status":1,"msg":"Success"}
+        return {"status":1,"msg":"Task Added Sucessfully"}
     
     else:
         return {'status':-1,"msg":"Your login session expires.Please login later."}
@@ -127,7 +134,7 @@ async def list_task_detail(
     user = get_user_token(db,token=token)
     if user:
         priority=["","High","medium","low"]
-        get_taskDetail=db.query(TaskDetail).filter(TaskDetail.user_id==user.id,
+        get_taskDetail=db.query(TaskDetail).filter(
                                                    TaskDetail.user_id==user.id,
                                                    TaskDetail.status==1,
                                                    ).order_by(TaskDetail.id.desc())
@@ -214,7 +221,7 @@ async def start_task(
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
                 taskDetail_id=taskdetail_id,
-                Ispaused=2
+                Ispaused=1
             )
             db.add(addWorkHistory)
             db.commit()
@@ -244,7 +251,7 @@ async def start_task(
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
                 taskDetail_id=taskdetail_id,
-                Ispaused=1
+                Ispaused=2
             )
             db.add(addWorkHistory)
             db.commit()
@@ -283,11 +290,14 @@ async def start_task(
                 WorkHistory.attendance_id == Attendance_id,
                 WorkHistory.workEnd_time == None  # Only the ongoing work session
             ).first()
-
+            
             if last_work_history:
                 last_work_history.workEnd_time = datetime.now(settings.tz_IN)
                 db.commit()
-            
+            get_TaskDetail=db.query(TaskDetail).filter(TaskDetail.status==1,TaskDetail.id==taskdetail_id,TaskDetail.attendance_id==Attendance_id).first()
+            if get_TaskDetail:
+                get_TaskDetail.complete_status=1
+                db.commit()
 
         
         work_history_records = get_WorkHistory.filter(WorkHistory.attendance_id == Attendance_id).all()
@@ -313,7 +323,9 @@ async def start_task(
             "msg": "Task updated successfully.",
             "total_work_time_hours": int(total_work_time),
             "total_break_time_hours": int(total_break_time),
-            "task_work_time":int(task_work_time)
+            "task_work_time":int(task_work_time),
+    
+            "close": 1 if close else 0
         }
         
     
@@ -372,13 +384,15 @@ async def list_attendance(
                
                 return {'status':1,
                         "msg":"Success",
-                        "attendance_id":get_attendance.id,
-                        "check_in":get_attendance.check_in,"TaskDetail_id":get_TaskDetail.id if get_TaskDetail else None ,
+                        "attendance_id": get_attendance.id ,
+                        "check_in":get_attendance.check_in,"TaskDetail_id":get_TaskDetail.id if get_TaskDetail and get_TaskDetail.complete_status != 1 else None ,
                         "total_work_time_hours": int(total_work_time),
                         "total_break_time_hours": int(total_break_time),
                         "task_work_time":int(task_work_time),
                         "Ispaused":get_pasued.Ispaused,
-                        "taskId": get_TaskDetail.task_id  if get_TaskDetail else None
+                        "taskId": get_TaskDetail.task_id  if get_TaskDetail  else None,
+                        "task_name":get_TaskDetail.task.name if get_TaskDetail else None,
+                        "task_description":get_TaskDetail.task_description if get_TaskDetail else None
                         }
             else:
                 return {'status':0,"msg":"you want to check_in"}
