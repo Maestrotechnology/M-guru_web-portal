@@ -35,7 +35,9 @@ class User(Base):
     scores_as_student = relationship("Score", foreign_keys="[Score.student_id]", back_populates="student")
     scores_as_teacher = relationship("Score", foreign_keys="[Score.teacher_id]", back_populates="teacher")
     project_details = relationship("StudentProjectDetail",back_populates="student")
-    task_detail = relationship("TaskDetail",back_populates="user")
+    task_detail = relationship("TaskDetail",foreign_keys="[TaskDetail.user_id]",back_populates="user")
+    task_details = relationship("TaskDetail",foreign_keys="[TaskDetail.trainer_id]",back_populates="users")
+
     api_tokens=relationship("ApiTokens",back_populates="user")
 
 
