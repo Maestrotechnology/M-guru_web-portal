@@ -21,5 +21,5 @@ class Batch(Base):
     # relationship
     users = relationship("User",back_populates="batch")
     applications = relationship("ApplicationDetails",back_populates="batch")
-    # batch_details = relationship("BatchCourseDetails", back_populates="batch")
+    task = relationship("Task",back_populates="batch")
     
