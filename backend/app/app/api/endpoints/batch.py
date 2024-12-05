@@ -21,11 +21,16 @@ async def createBatch(db:Session=Depends(get_db),
                      start_date:datetime=Form(...),
                      end_date:datetime=Form(...),
                      fee:int=Form(...),
-                     description:str=Form(None)):
+                     description:str=Form(None)
+):
     
     user = get_user_token(db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    if user.user_type !=1:
+        return {"status":0,"msg":"Access denied"}
+    
     get_batch=db.query(Batch).filter(Batch.status==1,Batch.name==name).first()
     if  get_batch:
         return {"status":0,"msg":"Batch  Name Already exit"}
@@ -53,11 +58,15 @@ async def updateBatch(db:Session=Depends(get_db),
                      start_date:datetime=Form(None),
                      end_date:datetime=Form(None),
                      fee:int=Form(None),
-                     ):
+):
     
     user = get_user_token(db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    if user.user_type !=1:
+        return {"status":0,"msg":"Access denied"}
+    
     check_batch=db.query(Batch).filter(Batch.status==1)
     get_batch=check_batch.filter(Batch.id==batch_id).first()
     if not get_batch:
@@ -80,11 +89,17 @@ async def updateBatch(db:Session=Depends(get_db),
 @router.post("/delete_batch")
 async def deleteBatch(db:Session=Depends(get_db),
                      token:str = Form(...),
-                     batch_id:int = Form(...) ):
+                     batch_id:int = Form(...) 
+):
+    
     
     user = get_user_token(db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    if user.user_type !=1:
+        return {"status":0,"msg":"Access denied"}
+    
     get_batch=db.query(Batch).filter(Batch.id==batch_id,Batch.status==1).first()
     if not get_batch:
         return {"status":0,"msg":"Batch Id not found"}
@@ -101,7 +116,12 @@ async def listBatch(db:Session=Depends(deps.get_db),
                    size:int=10,
                    Batch_name:str=Form(None),
                    ):
-    user=deps.get_user_token(db=db,token=token)
+    user=get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    if user.user_type not in [1,2]:
+        return {"status":0,"msg":"Access denied"}
     if user:
         getBatch =  db.query(Batch).filter(Batch.status==1)
         if Batch_name:
@@ -134,12 +154,19 @@ async def listBatch(db:Session=Depends(deps.get_db),
  
     
 @router.post("/allocate_batch")
-async def allocateBatch(
+async def allocateBatch(token:str=Form(...),
                         db: Session=Depends(get_db),
                         application_id: int=Form(...),
                         batch_id: int=Form(...),
                         course_id: int=Form(...),
 ):
+    user=get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    if user.user_type != 1:
+        return {"status":0,"msg":"Access denied"}
+    
     application_data = db.query(ApplicationDetails).filter(ApplicationDetails.id == application_id,ApplicationDetails.status==1).first()
     if not application_data:
         return {"status":0, "msg":"Invalid application"}
@@ -180,7 +207,7 @@ async def allocateBatch(
 @router.post("/list_batch_details")
 async def listBatchDetails(
                             db: Session=Depends(deps.get_db),
-                            # token:  str=Form(...),
+                            token:  str=Form(...),
                             batch_id: int = Form(...),
                             course_id: int = Form(None),
                             name: str = Form(None),
@@ -189,6 +216,13 @@ async def listBatchDetails(
                             page: int= Form(1),
                             size: int= Form(10)
 ):
+    user=get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    if user.user_type not in [1,2]:
+        return {"status":0,"msg":"Access denied"}
+    
     batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status==1).first()
     if not batch_data:
         return {"status":0, "msg":"Invalid batch"}
