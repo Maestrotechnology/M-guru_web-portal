@@ -128,6 +128,7 @@ async def add_task(
 async def list_task_detail(
                     db: Session = Depends(get_db),
                     token: str = Form(...),
+                    task:int=Form(...,description="1->not completd 2 -> completed"),
                     page: int = 1,
                     size: int = 10
 ):
@@ -136,8 +137,13 @@ async def list_task_detail(
         priority=["","High","medium","low"]
         get_taskDetail=db.query(TaskDetail).filter(
                                                    TaskDetail.user_id==user.id,
-                                                   TaskDetail.status==1,
-                                                   ).order_by(TaskDetail.id.desc())
+                                                   TaskDetail.status==1)
+                                                
+        if task==1:
+            get_taskDetail=get_taskDetail.filter(TaskDetail.complete_status!=1).order_by(TaskDetail.id.desc())
+        if task==1:
+            get_taskDetail=get_taskDetail.filter(TaskDetail.complete_status==1).order_by(TaskDetail.id.desc())
+
         totalCount= get_taskDetail.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         get_taskDetail=get_taskDetail.limit(limit).offset(offset).all()
@@ -196,6 +202,17 @@ async def start_task(
         task_work_time=0
         get_WorkHistory=db.query(WorkHistory).filter(WorkHistory.status==1)
         get_data=get_WorkHistory.filter(WorkHistory.attendance_id).order_by(WorkHistory.id.desc()).first()
+        
+        last_updated_time = datetime.now(settings.tz_IN)
+
+        if get_data:
+            last_updated_time = get_data.created_at  # use the last created time if available
+        
+        # Calculate time difference from last update (if any)
+        time_difference = (datetime.now(settings.tz_IN) - last_updated_time).total_seconds()
+
+        
+        
         if action == 1:
             if get_data.work_time!=None:
                 return{
@@ -296,7 +313,7 @@ async def start_task(
                 db.commit()
             get_TaskDetail=db.query(TaskDetail).filter(TaskDetail.status==1,TaskDetail.id==taskdetail_id,TaskDetail.attendance_id==Attendance_id).first()
             if get_TaskDetail:
-                get_TaskDetail.complete_status=1
+                get_TaskDetail.close_status=1
                 db.commit()
 
         
@@ -313,11 +330,14 @@ async def start_task(
                 
                 break_duration = record.breakEnd_time - record.break_time
                 total_break_time += break_duration.total_seconds() 
+        
         for record in task_history_records:
             if record.work_time and record.workEnd_time:
                
                 work_duration = record.workEnd_time - record.work_time
                 task_work_time += work_duration.total_seconds()
+        total_work_time += time_difference
+        task_work_time += time_difference
         return {
             "status" : 1,
             "msg": "Task updated successfully.",
@@ -359,6 +379,9 @@ async def list_attendance(
                 total_work_time = 0
                 total_break_time = 0
                 task_work_time=0
+
+                last_updated_time = datetime.now(settings.tz_IN)
+
                 
                 get_TaskDetail=db.query(TaskDetail).filter(TaskDetail.status==1,TaskDetail.attendance_id==get_attendance.id).order_by(TaskDetail.id.desc()).first()
                 
@@ -381,11 +404,16 @@ async def list_attendance(
                         
                             work_duration = record.workEnd_time - record.work_time
                             task_work_time += work_duration.total_seconds()
-               
+                total_work_time_td = timedelta(seconds=total_work_time)
+                last_updated_time = datetime.now(settings.tz_IN)
+                time_difference = total_work_time_td-last_updated_time
+                task_work_time +=  time_difference.total_seconds()
+                
+
                 return {'status':1,
                         "msg":"Success",
                         "attendance_id": get_attendance.id ,
-                        "check_in":get_attendance.check_in,"TaskDetail_id":get_TaskDetail.id if get_TaskDetail and get_TaskDetail.complete_status != 1 else None ,
+                        "check_in":get_attendance.check_in,"TaskDetail_id":get_TaskDetail.id if get_TaskDetail and get_TaskDetail.close_status != 1 else None ,
                         "total_work_time_hours": int(total_work_time),
                         "total_break_time_hours": int(total_break_time),
                         "task_work_time":int(task_work_time),
@@ -416,9 +444,23 @@ async def list_attendance(
             return {"status":1,"msg":"Success","data":data}
     
 
-
-
-    
+@router.post("/complete_task")
+async def complete_task(
+                    db: Session = Depends(get_db),
+                    token: str = Form(...),
+                    TaskDetail_Id: int = Form(...),
+                    
+):
+    user = get_user_token(db,token=token)
+    if user:
+        get_TaskDetail=db.query(TaskDetail).filter(TaskDetail.id==TaskDetail_Id).first()
+        if get_TaskDetail:
+            get_TaskDetail.complete_status=1
+            db.commit()
+            return {"status":1,"msg":"task completed sucessfully"}
+        else:
+            return {"status":0,"msg":"Invalid TaskDetail Id"}
+        
     
     
 

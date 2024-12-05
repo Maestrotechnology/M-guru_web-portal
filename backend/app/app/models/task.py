@@ -24,6 +24,6 @@ class Task(Base):
     batch = relationship("Batch",back_populates="task")
     created_by = relationship("User",back_populates="created_task")
     attendance = relationship("Attendance",back_populates="task")
-    task_detail = relationship("TaskDetail",back_populates="task")
+   
     scores = relationship("Score",back_populates="task")
     project_details = relationship("StudentProjectDetail", back_populates="task")

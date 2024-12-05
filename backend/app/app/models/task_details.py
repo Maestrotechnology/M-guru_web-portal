@@ -8,20 +8,22 @@ class TaskDetail(Base):
     __tablename__ = "task_detail"
     id = Column(Integer,primary_key=True,index=True)
     attendance_id =Column(Integer,ForeignKey("attendance.id"))
-    task_id=Column(Integer,ForeignKey("task.id"))
+   
     user_id=Column(Integer,ForeignKey("user.id"))
     expected_time=Column(String(50))
-    priority=Column(TINYINT,comment="1-> High 2 -> medium 3 -> low" )
-    complete_status = Column(TINYINT, comment="1-> complete 2 -> not complete")
+    trainer_id=Column(Integer,ForeignKey("user.id"))
+    rating=Column(Integer)
+    close_status=Column(TINYINT, comment="1-> close ")
+    complete_status = Column(TINYINT, comment="1-> complete  ")
     description = Column(Text)
-    task_description = Column(String(250))
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
 
     attendance = relationship("Attendance",back_populates="task_detail")
-    user = relationship("User",back_populates="task_detail")
-    task = relationship("Task",back_populates="task_detail")
+    user = relationship("User",foreign_keys=[user_id],back_populates="task_detail")
+    users = relationship("User",foreign_keys=[trainer_id],back_populates="task_details")
     work_history = relationship("WorkHistory",back_populates="task_detail")
+
 
 

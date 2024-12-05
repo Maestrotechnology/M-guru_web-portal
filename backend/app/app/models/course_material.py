@@ -14,6 +14,7 @@ class CourseMaterial(Base):
     updated_at = Column(DateTime)
 
     # ForeignKey
+    batch_id = Column(Integer,ForeignKey("batch.id"))
     course_id = Column(Integer,ForeignKey("course.id"))
     created_by_user_id = Column(Integer, ForeignKey("user.id"))
 
@@ -21,3 +22,4 @@ class CourseMaterial(Base):
     course = relationship("Course",back_populates="materials")
     documents = relationship("CourseMedia", back_populates="course_material")
     created_by = relationship("User",back_populates="materials")
+    batch = relationship("Batch",back_populates="course_material")
