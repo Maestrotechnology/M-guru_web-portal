@@ -8,7 +8,7 @@ class TaskDetail(Base):
     __tablename__ = "task_detail"
     id = Column(Integer,primary_key=True,index=True)
     attendance_id =Column(Integer,ForeignKey("attendance.id"))
-   
+    task =Column(String(350))
     user_id=Column(Integer,ForeignKey("user.id"))
     expected_time=Column(String(50))
     trainer_id=Column(Integer,ForeignKey("user.id"))
