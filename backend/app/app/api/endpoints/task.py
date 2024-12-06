@@ -54,10 +54,10 @@ async def listTask(
                     token: str = Form(...),
                     name: str = Form(None),
                     task_id: int = Form(None),
-                    page: int = 1,
-                    size: int = 10,
                     course_id: int = Form(None),
-                    batch_id: int = Form(None)
+                    batch_id: int = Form(None),
+                    page: int = Form(1),
+                    size: int = Form(10),
 ):
     user = get_user_token(db,token=token)
     if not user:
@@ -66,8 +66,9 @@ async def listTask(
 
     get_task = db.query(Task).filter(Task.status == 1)
     if user.user_type == 3:
-        if not course_id or not batch_id:
-            return {"status":0, "msg":"Course and batch is required"}
+       
+            course_id = user.course_id
+            batch_id = user.batch_id
 
     if task_id:
         get_task = get_task.filter(Task.id == task_id)
@@ -89,14 +90,14 @@ async def listTask(
             "id":data.id,
             "created_by":data.created_by.name,
             "name":data.name,
-            "task_report_url": f"{settings}/data.task_report_url" if data.task_report_url else None,
-            "from_date": data.from_date,
-            "end_date": data.end_date,
+            "task_report_url": f"{settings.BASEURL}/{data.task_report_url}" if data.task_report_url else None,
+            "from_date": data.from_date.strftime("%Y-%m-%d %H:%M") if data.from_date else None,
+            "end_date": data.end_date.strftime("%Y-%m-%d %H:%M") if data.from_date else None,
             "description": data.description,
             "course_id": data.course_id,
-            "course name": data.course.name if data.course else None,
+            "course_name": data.course.name if data.course else None,
             "batch_id": data.batch_id,
-            "batch name": data.batch.name if data.batch else None
+            "batch_name": data.batch.name if data.batch else None
         })
     data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,

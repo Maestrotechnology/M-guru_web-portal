@@ -12,25 +12,42 @@ router = APIRouter()
 async def enterScore(
                         db:Session=Depends(get_db),
                         token:str = Form(...),
-                        task_id: int = Form(...),
-                        student_id: int = Form(...),
-                        mark: int = Form(...),
+                        task_id: int = Form(),
+                        student_ids: str = Form(),
+                        marks: str = Form(...),
+                        task_name: str = Form(None),
                         description: str = Form(None)
 ):
     user = get_user_token(db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
-    
-    create_score = Score(
-        description = description,
-        status = 1,
-        created_at = datetime.now(settings.tz_IN),
-        updated_at = datetime.now(settings.tz_IN),
-        mark = mark,
-        task_id = task_id,
-        student_id = student_id,
-        teacher_id = user.id
-    )
+    if task_name:
+        create_task = Task(
+            name=task_name,
+            status=1,
+            created_by_user_id=user.id,
+            description=description
+        )
+        db.add(create_task)
+        db.commit()
+
+    get_students_ids = student_ids.split(",")
+    get_marks = marks.split(",")
+    if len(get_students_ids)!=len(get_marks):
+        return {"status":0, "msg":"Invaild details"}
+                                  
+
+    for index in range(len(get_students_ids)):
+        create_score = Score(
+            description = description,
+            status = 1,
+            created_at = datetime.now(settings.tz_IN),
+            updated_at = datetime.now(settings.tz_IN),
+            mark = get_marks[index],
+            task_id = task_id,
+            student_id = get_students_ids[index],
+            teacher_id = user.id
+        )
     db.add(create_score)
     db.commit()
     return {"status":1,"msg":"Score entered successfully"}
@@ -122,3 +139,24 @@ async def deleteScore(
     get_student_score.status=-1
     db.commit()
     return {"status":1,"msg":"Score successfully deleted"}
+
+@router.post("/list_active_branch_student")
+async def listActiveBranchStudent(
+                                    db: Session=Depends(get_db),
+                                    token:  str=Form(...)
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+
+    get_active_batch = db.query(Batch).filter(Batch.status == 1).first()
+
+    get_students = db.query(User).join(Batch).filter(Batch.status==1).all()
+
+    return get_students
+    
+    
+    
+
+    
+

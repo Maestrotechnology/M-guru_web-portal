@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Depends,UploadFile,Form,File
 from typing import Annotated
-from api.deps import get_db
+from api.deps import *
 from sqlalchemy.orm import Session
 from pydantic import EmailStr
 from app.models import *
@@ -35,6 +35,7 @@ async def captchaCheck(captcha_token: str = Form(...)):
 
 @router.post("/create_application")
 async def createApplication(*,
+                            token: str = Form(...),
                             db: Annotated[Session, Depends(get_db)],
                             name: Annotated[str, Form(...)],
                             email: Annotated[EmailStr, Form(...)],
@@ -45,8 +46,11 @@ async def createApplication(*,
                             enquiry_id: Annotated[int, Form(...)],
                             course_id: Annotated[int, Form(...)]
 ):
-    
-    
+    user = get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}  
+    if user.user_type != 1:
+        return {"status":0,"msg":"Access denied"}
     get_applications = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.email==email).first()
     if get_applications:
         return {"status":0,"msg":"Give Email is already exist"}
@@ -74,6 +78,7 @@ async def createApplication(*,
 
 @router.post("/update_application")
 async def updateApplication(*,
+                            token: str = Form(...),
                             db: Annotated[Session, Depends(get_db)],
                             application_id: Annotated[int, Form(...)],
                             name: Annotated[str, Form(...)],
@@ -85,6 +90,12 @@ async def updateApplication(*,
                             enquiry_id: Annotated[int, Form(...)],
                             course_id: Annotated[int, Form(...)]
 ):
+    user = get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}  
+    if user.user_type != 1:
+        return {"status":0,"msg":"Access denied"}
+    
     db_application = db.query(ApplicationDetails).filter(
                                                         ApplicationDetails.id == application_id,
                                                         ApplicationDetails.status == 1
@@ -124,6 +135,7 @@ async def updateApplication(*,
 
 @router.post("/list_application")
 async def listApplication(*,
+                            token: str = Form(...),
                             db: Annotated[Session, Depends(get_db)],
                             type: Annotated[int, Form(...,description="1->current_applications , 2->interview , 3->attended , 4-> not selected, 5-> selected, 6->waiting list")],
                             id: Annotated[str, Form(description="multiple ids use (1,2,3) else (1)")] = None,
@@ -134,6 +146,11 @@ async def listApplication(*,
                             page: Annotated[int, Form()] = 1,
                             size: Annotated[int, Form()] = 10,
 ):
+    user = get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}  
+    if user.user_type != 1:
+        return {"status":0,"msg":"Access denied"}
     if type == 1:#current_applications
         db_applications = db.query(ApplicationDetails).outerjoin(
             Interview,Interview.application_id == ApplicationDetails.id
@@ -212,10 +229,16 @@ async def listApplication(*,
     return ({"status":1,"msg":"Success.","data":data})
 
 @router.post("/delete_application")
-async def deleteApplication(
+async def deleteApplication(*,
+                            token: str = Form(...),
                             db: Annotated[Session, Depends(get_db)],
                             application_id: Annotated[int, Form(...)]
 ):
+    user = get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}  
+    if user.user_type != 1:
+        return {"status":0,"msg":"Access denied"}
     db_application = db.query(ApplicationDetails).filter(ApplicationDetails.id == application_id, ApplicationDetails.status==1).first()
     if not db_application:
         return {"status":0,"msg":"Application not found"}
@@ -226,12 +249,18 @@ async def deleteApplication(
 
 
 @router.post("/schedule_interview")
-async def scheduleInterview(
+async def scheduleInterview(*,
+                            token: str = Form(...),
                             db: Annotated[Session, Depends(get_db)],
                             application_id: Annotated[int, Form(...)],
                             scheduled_date: datetime = Form(None,description="The scheduled date for the interview"),
                             application_status: Annotated[int, Form(description="1-> seleted 2->not seleted ")]=None
 ):
+    user = get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}  
+    if user.user_type != 1:
+        return {"status":0,"msg":"Access denied"}
     db_application = db.query(ApplicationDetails).filter(
         ApplicationDetails.id == application_id,
         ApplicationDetails.status == 1
@@ -270,7 +299,8 @@ async def scheduleInterview(
         return {"status":1, "msg":"Application successfully moved to waiting list"}
 
 @router.post("/enter_interview_marks")
-async def enterInterviewMarks(
+async def enterInterviewMarks(*,
+                              token: str = Form(...),
                               db: Annotated[Session, Depends(get_db)],
                               application_id: Annotated[int, Form(...)],
                               attended_date: Annotated[datetime, Form(...)],
@@ -281,6 +311,12 @@ async def enterInterviewMarks(
                               application_status: Annotated[int, Form(description="1-> seleted 2->not seleted 3->waiting list")]=None,
                               scholarship: Annotated[int, Form()] = None
 ):
+    user = get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}  
+    if user.user_type != 1:
+        return {"status":0,"msg":"Access denied"}
+    
     db_interview_details = db.query(Interview).filter(
         Interview.application_id == application_id
     ).first()

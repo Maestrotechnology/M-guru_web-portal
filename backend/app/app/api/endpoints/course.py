@@ -80,38 +80,41 @@ async def deleteCourse(db:Session=Depends(get_db),
     }
 
 @router.post("/list_Course")
-async def listCourse(db:Session=Depends(deps.get_db),
+async def listCourse(
+                    db:Session=Depends(deps.get_db),
                    token:str=Form(...),page:int=1,
                    size:int=10,
                    Course_name:str=Form(None),
-                   ):
-    user=deps.get_user_token(db=db,token=token)
-    if user:
-        getCourse =  db.query(Course).filter(Course.status ==1)
-        if Course_name:
-            getCourse = getCourse.filter(Course.name.like("%"+Course_name+"%"))
-        getCourse = getCourse.order_by(Course.name)
-        totalCount= getCourse.count()
-        total_page,offset,limit=get_pagination(totalCount,page,size)
-        getCourse=getCourse.limit(limit).offset(offset).all()
-        dataList =[]
+):
+    user=get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    getCourse =  db.query(Course).filter(Course.status ==1)
+    
+    
+    if Course_name:
+           getCourse = getCourse.filter(Course.name.like("%"+Course_name+"%"))
+    if user.user_type == 3:
+        getCourse = getCourse.filter(Course.id == user.course_id)
+        
+    getCourse = getCourse.order_by(Course.name)
+    totalCount= getCourse.count()
+    total_page,offset,limit=get_pagination(totalCount,page,size)
+    getCourse=getCourse.limit(limit).offset(offset).all()
+    dataList =[]
 
-        for row in getCourse:
+    for row in getCourse:
             dataList.append({
                 "course_id" :row.id,
                 "course_name":row.name,
                 "created_at":row.created_at,
             
             })
-        data=({"page":page,"size":size,"total_page":total_page,
+    data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,
                 "items":dataList})
-        return {"status":1,"msg":"Success","data":data}
+    return {"status":1,"msg":"Success","data":data}
     
-
-    else:
-        return({'status' :-1,
-                'msg' :'Sorry! your login session expired. please login again.'}) 
     
 
 
