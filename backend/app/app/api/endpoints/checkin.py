@@ -239,14 +239,14 @@ async def complete_task(
 async def list_trainer_rating(
                     db: Session = Depends(get_db),
                     token: str = Form(...),
-                    tainer_id:str=Form(...),
+                    trainer_id:str=Form(...),
                     page: int = 1,
                     size: int = 10
 ):
     user = get_user_token(db,token=token)
     if user:
         get_taskDetail=db.query(TaskDetail).filter(
-                                                   TaskDetail.trainer_id==tainer_id,
+                                                   TaskDetail.trainer_id==trainer_id,
                                                    TaskDetail.status==1).order_by(TaskDetail.id.desc())
        
         totalCount= get_taskDetail.count()
@@ -263,7 +263,8 @@ async def list_trainer_rating(
                 "expected_time":data.expected_time,
                 "trainer_id":data.trainer_id,
                 "trainer_name":data.users.username if data.trainer_id!=None else None,
-                "rating":data.rating
+                "rating":data.rating,
+                "created_at":data.created_at
             })
         data=({"page":page,"size":size,"total_page":total_page,
                     "total_count":totalCount,
