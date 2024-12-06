@@ -155,3 +155,63 @@ async def deleteTask(
     db.add(get_task)
     db.commit()
     return {"status":1,"msg":"Task deleted successfully"}
+
+@router.post("/list_task_score")
+async def listTaskScore(
+                        db: Session = Depends(get_db),
+                        token: str = Form(...),
+                        task_id: int = Form(...),
+                        name: str = Form(None),
+                        username: str = Form(None),
+                        page: int = Form(1),
+                        size: int = Form(50)
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    if user.user_type not in [1,2]:
+        return {"status":0,"msg":"Access denied"}
+    """
+    In below query im getting , active batch users score
+    """
+    get_score = db.query(Score).join(
+        Task,Task.id == Score.task_id,
+    ).join(
+        User,
+        User.id == Score.student_id
+    ).join(
+        Batch,
+        User.batch_id == Batch.id
+    ).filter(Batch.status==1,Task.id==task_id)
+
+    if name:
+        get_score = get_score.filter(User.name.ilike(f"%{name}%"))
+    if username:
+        get_score = get_score.filter(User.username.ilike(f"%{username}%"))
+
+    get_score = get_score.order_by(Task.name)
+    totalCount= get_score.count()
+    total_page,offset,limit=get_pagination(totalCount,page,size)
+    get_score=get_score.limit(limit).offset(offset).all()
+
+    data_list = []
+    for data in get_score:
+        data_list.append({
+            "score_id": data.id,
+            "student_name": data.student.name,
+            "student_id": data.student.id,
+            "mark": data.mark,
+            "description": data.description,
+            "mark_giver": data.teacher.name,
+            "tast_id": data.task_id,
+            "task_name": data.task.name,
+            "mark_given_date": data.created_at
+        })
+
+
+    data=({"page":page,"size":size,"total_page":total_page,
+                "total_count":totalCount,
+                "items":data_list})
+    return {"status":1,"msg":"Success","data":data}
+    

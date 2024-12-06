@@ -12,7 +12,7 @@ router = APIRouter()
 async def enterScore(
                         db:Session=Depends(get_db),
                         token:str = Form(...),
-                        task_id: int = Form(),
+                        task_id: int = Form(None),
                         student_ids: str = Form(),
                         marks: str = Form(...),
                         task_name: str = Form(None),
@@ -21,6 +21,10 @@ async def enterScore(
     user = get_user_token(db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
+    create_task = None
+    if not task_id and not task_name:
+        return {"status":0, "msg":"Task Required"}
+    
     if task_name:
         create_task = Task(
             name=task_name,
@@ -44,11 +48,11 @@ async def enterScore(
             created_at = datetime.now(settings.tz_IN),
             updated_at = datetime.now(settings.tz_IN),
             mark = get_marks[index],
-            task_id = task_id,
+            task_id = create_task.id,
             student_id = get_students_ids[index],
             teacher_id = user.id
         )
-    db.add(create_score)
+        db.add(create_score)
     db.commit()
     return {"status":1,"msg":"Score entered successfully"}
 
@@ -140,20 +144,7 @@ async def deleteScore(
     db.commit()
     return {"status":1,"msg":"Score successfully deleted"}
 
-@router.post("/list_active_branch_student")
-async def listActiveBranchStudent(
-                                    db: Session=Depends(get_db),
-                                    token:  str=Form(...)
-):
-    user = get_user_token(db,token=token)
-    if not user:
-        return {"status":0,"msg":"Your login session expires.Please login again."}
 
-    get_active_batch = db.query(Batch).filter(Batch.status == 1).first()
-
-    get_students = db.query(User).join(Batch).filter(Batch.status==1).all()
-
-    return get_students
     
     
     

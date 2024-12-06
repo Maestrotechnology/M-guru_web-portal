@@ -42,7 +42,7 @@ async def uploadProject(
 async def listStudentProject(
                                 db: Session = Depends(get_db),
                                 token: str = Form(...),
-                                batch_id: int = Form(None),
+                                # batch_id: int = Form(None),
                                 course_id: int = Form(None),
                                 task_id: int = Form(None),
                                 page: int = Form(1),
@@ -54,14 +54,14 @@ async def listStudentProject(
     
     if user.user_type == 3:
         get_projects = db.query(StudentProjectDetail).filter(StudentProjectDetail.status==1,StudentProjectDetail.user_id==user.id)
+    else:
+        batch = db.query(Batch).filter(Batch.status==1).first()
 
-    if user.user_type in [1,2]:
-        if not batch_id:
-            return {"status":0,"msg":"batch is required"}
         get_projects = db.query(
-            StudentProjectDetail
-        ).join(User).filter(StudentProjectDetail.status == 1,User.batch_id==batch_id)
-        if course_id:
+                StudentProjectDetail
+            ).join(User,User.id == StudentProjectDetail.user_id).filter(StudentProjectDetail.status == 1,User.batch_id==batch.id)
+
+    if course_id:
             get_projects = get_projects.filter(User.course_id==course_id)
         
 
@@ -79,7 +79,7 @@ async def listStudentProject(
             "description": project.description,
             "task_id": project.task_id,
             "task": project.task.name,
-            "user_id": project.user_id,
+            "student_id": project.user_id,
             "user_name": project.student.name,
             "project" : f"{settings.BASEURL}/{project.project_url}",
             "created_at": project.created_at
