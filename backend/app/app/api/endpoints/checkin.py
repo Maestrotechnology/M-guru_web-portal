@@ -153,11 +153,10 @@ async def list_task_detail(
                 "attendance_id":data.attendance_id,
                 "user_id":data.user_id,
                 "user_name":data.user.username,
-                "task_id":data.task_id,
-                "task_name":data.task.name,
+                "task":data.task,
                 "expected_time":data.expected_time,
-                "priority_id":data.priority,
-                "priority_name":priority[data.priority]
+                "trainer_id":data.trainer_id,
+                "trainer_name":data.users.username if data.trainer_id!=None else None
             })
         data=({"page":page,"size":size,"total_page":total_page,
                     "total_count":totalCount,
@@ -236,5 +235,38 @@ async def complete_task(
             return {"status":0,"msg":"Invalid TaskDetail Id"}
         
     
-    
+@router.post("/list_trainer_rating")
+async def list_trainer_rating(
+                    db: Session = Depends(get_db),
+                    token: str = Form(...),
+                    tainer_id:str=Form(...),
+                    page: int = 1,
+                    size: int = 10
+):
+    user = get_user_token(db,token=token)
+    if user:
+        get_taskDetail=db.query(TaskDetail).filter(
+                                                   TaskDetail.trainer_id==tainer_id,
+                                                   TaskDetail.status==1).order_by(TaskDetail.id.desc())
+       
+        totalCount= get_taskDetail.count()
+        total_page,offset,limit=get_pagination(totalCount,page,size)
+        get_taskDetail=get_taskDetail.limit(limit).offset(offset).all()
+
+        data_list = []
+        for data in get_taskDetail:
+            data_list.append({
+                "TaskDetail_id":data.id,
+                "user_id":data.user_id,
+                "user_name":data.user.username,
+                "task":data.task,
+                "expected_time":data.expected_time,
+                "trainer_id":data.trainer_id,
+                "trainer_name":data.users.username if data.trainer_id!=None else None,
+                "rating":data.rating
+            })
+        data=({"page":page,"size":size,"total_page":total_page,
+                    "total_count":totalCount,
+                    "items":data_list})
+        return {"status":1,"msg":"Success","data":data}
 

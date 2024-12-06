@@ -84,3 +84,21 @@ async def dropDownTask(
         })
     return {"status":1,"msg":"Success","data":data_list}
     
+
+@router.post("/dropDownTrainer")
+async def dropDownTrainer(
+                        db:Session = Depends(deps.get_db),
+                        token:str=Form(...)
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    get_user = db.query(User).filter(User.status == 1,User.user_type==2).order_by(User.username).all()
+    data_list = []
+    for data in get_user:
+        data_list.append({
+            "id":data.id,
+            "name":data.username
+        })
+    return {"status":1,"msg":"Success","data":data_list}
