@@ -406,8 +406,8 @@ async def list_attendance(
                             task_work_time += work_duration.total_seconds()
                 total_work_time_td = timedelta(seconds=total_work_time)
                 last_updated_time = datetime.now(settings.tz_IN)
-                time_difference = total_work_time_td-last_updated_time
-                task_work_time +=  time_difference.total_seconds()
+                time_difference = 0#total_work_time_td-last_updated_time
+                #task_work_time +=  time_difference.total_seconds()
                 
 
                 return {'status':1,
@@ -418,9 +418,9 @@ async def list_attendance(
                         "total_break_time_hours": int(total_break_time),
                         "task_work_time":int(task_work_time),
                         "Ispaused":get_pasued.Ispaused,
-                        "taskId": get_TaskDetail.task_id  if get_TaskDetail  else None,
-                        "task_name":get_TaskDetail.task.name if get_TaskDetail else None,
-                        "task_description":get_TaskDetail.task_description if get_TaskDetail else None
+#                        "taskId": get_TaskDetail.task_id  if get_TaskDetail  else None,
+                        #"task_name":get_TaskDetail.task.name if get_TaskDetail else None,
+                        #"task_description":get_TaskDetail.task_description if get_TaskDetail else None
                         }
             else:
                 return {'status':0,"msg":"you want to check_in"}

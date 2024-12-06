@@ -65,6 +65,9 @@ async def listCourseMaterials(
     if course_material_id:
         get_course_materials = get_course_materials.filter(CourseMaterial.id == course_material_id)
 
+    if user.user_type == 3:
+        get_course_materials = get_course_materials.filter(CourseMaterial.batch_id!=None)
+
     get_course_materials = get_course_materials.order_by(CourseMaterial.id)
     totalCount= get_course_materials.count()
     total_page,offset,limit=get_pagination(totalCount,page,size)
@@ -97,7 +100,8 @@ async def updateCourseMaterials(
                                 course_id: int = Form(...),
                                 description: str = Form(),
                                 name: str = Form(),
-                                list_material: list[UploadFile] = File(None)
+                                list_material: list[UploadFile] = File(None),
+                                batch_id: int = Form(None)
 ):
     user = get_user_token(db=db,token=token)
     if not user:
@@ -106,6 +110,10 @@ async def updateCourseMaterials(
     get_course_material = db.query(CourseMaterial).filter(CourseMaterial.id==course_material_id,CourseMaterial.status==1).first()
     if not get_course_material:
         return {"status":0,"msg":"Material not found"}
+    
+    if batch_id:
+        get_course_material.batch_id = batch_id
+
     get_course_material.course_id = course_id
     get_course_material.description = description
     get_course_material.name = name

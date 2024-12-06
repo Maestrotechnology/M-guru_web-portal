@@ -316,6 +316,7 @@ async def enterInterviewMarks(*,
         return {"status":0,"msg":"Your login session expires.Please login again."}  
     if user.user_type != 1:
         return {"status":0,"msg":"Access denied"}
+    
     db_interview_details = db.query(Interview).filter(
         Interview.application_id == application_id
     ).first()

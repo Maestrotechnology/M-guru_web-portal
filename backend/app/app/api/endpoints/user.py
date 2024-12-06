@@ -35,6 +35,11 @@ async def createUser(db:Session=Depends(get_db),
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
 
+    if user_type in [2,3]:
+        if not course_id:
+            return {"status":0,"msg":"Course required"}
+    if user_type == 3 and batch_id is None:
+        return {"status":0,"msg":"Batch required for student"}
     
     checkUser = db.query(User).filter(User.status==1)
 
