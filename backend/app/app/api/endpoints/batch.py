@@ -267,6 +267,61 @@ async def listBatchDetails(
     
     return {"status":1,"msg":"Success","data":data}
     
+@router.post("/list_active_branch_student")
+async def listActiveBranchStudent(
+                                    db: Session=Depends(get_db),
+                                    token:  str=Form(...),
+                                    course_id: int = Form(None),
+                                    name: str = Form(None),
+                                    email: str = Form(None),
+                                    phone: str = Form(None),
+                                    page: int = Form(1),
+                                    size: int = Form(50),
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    if user.user_type not in [1,2]:
+        return {"status":0,"msg":"Access denied"}
+
+    students = db.query(User).join(Batch).filter(Batch.status==1,User.user_type==3,User.status==1)
+
+    if course_id:
+        students = students.filter(User.course_id == course_id)
+    if name:
+        students = students.filter(User.name.like(f"%{name}%"))
+    if email:
+        students = students.filter(User.email.ilike(f"%{email}%"))
+    if phone:
+        students = students.filter(User.phone == phone)
+        
+    students = students.order_by(User.id.desc())
+    totalCount= students.count()
+
+    total_page,offset,limit=get_pagination(totalCount,page,size)
+    students=students.limit(limit).offset(offset).all()
+    dataList =[]
+
+    for student in students:
+        dataList.append({
+            "id": student.id,
+            "name": student.name,
+            "email": student.email,
+            "username": student.username,
+            "phone": student.phone,
+            "address": student.address,
+            "course": student.course.name if student.course else None,
+            "batch_id": student.batch_id,
+            "course_id": student.course_id
+        })
+        
+    data=({"page":page,
+           "size":size,
+           "total_page":total_page,
+            "total_count":totalCount,
+            "items":dataList})
+    
+    return {"status":1,"msg":"Success","data":data}
 
 
 

@@ -121,7 +121,7 @@ async def list_user(
                    userType:int=Form(...,description="2>Trainer, 3>Student"),
                    user_id: int = Form(None),
                    course_id: int = Form(None),
-                   batch_id: int = Form(),
+                   batch_id: int = Form(None),
                    email: str = Form(None),
                    username:str=Form(None),
                    phoneNumber:int=Form(None),
@@ -135,11 +135,12 @@ async def list_user(
     if userType not in[1,2,3]:
         return {"status":0, "msg":"Invalid user type"}
     
-    get_batch = db.query(Batch).filter(Batch.id==batch_id,Batch.status==1).first()
-    if not get_batch:
-        return {"status":0, "msg":"Invalid batch"}
+    if batch_id:
+        get_batch = db.query(Batch).filter(Batch.id==batch_id,Batch.status==1).first()
+        if not get_batch:
+            return {"status":0, "msg":"Invalid batch"}
     
-    get_user = db.query(User).filter(User.status==1)
+    get_user = db.query(User).filter(User.status==1,User.user_type == userType)
 
     if batch_id:
         get_user = get_user.filter(User.batch_id==batch_id)
@@ -150,8 +151,7 @@ async def list_user(
     if email:
         get_user = get_user.filter(User.email == email)
     if username:
-        get_user = get_user.filter(User.username.like("%"+username+"%"))
-
+        get_user = get_user.filter(User.username.ilike(f"%{username}%"))
     if phoneNumber:
         get_user = get_user.filter(User.phone == phoneNumber)
 
@@ -171,8 +171,9 @@ async def list_user(
             "email":data.email,
             "user_type":data.user_type,
             "address":data.address,
-            "course_name": data.course.name,
+            "course_name":  data.course.name if data.course else None,
             "course_id": data.course_id,
+            "phone": data.phone
         })
     data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,

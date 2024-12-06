@@ -53,7 +53,7 @@ async def listCourseMaterials(
                                 course_material_id: int = Form(None),
                                 course_id: int = Form(...),
                                 page:int=1,
-                                size:int=10,
+                                size:int=50,
 ):
     user = get_user_token(db=db,token=token)
     if not user:
