@@ -10,7 +10,7 @@ from datetime import datetime
 from app.utils import *
 from sqlalchemy import or_
 from pydantic import EmailStr
-from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_validation,get_username
+from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_validation,get_username,calculate_distance
 
 router = APIRouter()
 @router.post("/checK_in")
@@ -26,11 +26,32 @@ async def checK_in(
 ):
     user = deps.get_user_token(db=db, token=token)
     if user:
+        if user.user_type!=3:
+            return {"status": 0, "msg": "You are not allowed to access"}
+
+
         if not latitude:
             return {"status": 0, "msg": "Latitude is missing"}
 
         if not longitude:
             return {"status": 0, "msg": "Longitude is missing"}
+        
+        office_lat = 11.091968  
+        office_lon =  77.021184 
+
+        
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+        except:
+            return {"status": 0, "msg": "Invalid latitude or longitude format"}
+
+        
+        distance = calculate_distance(latitude, longitude, office_lat, office_lon)
+
+        
+        if distance > 100:
+            return {"status": 0, "msg": "You are too from the check in location"}
         if check_in_out==1:
             checkTodayCheckIN = (
             db.query(Attendance)
@@ -98,6 +119,8 @@ async def add_task(
 ):
     user = deps.get_user_token(db=db, token=token)
     if user:
+        if user.user_type!=3:
+            return {"status": 0, "msg": "You are not allowed to access"}
         checkTodayCheckIN = (
             db.query(Attendance)
             .filter(
