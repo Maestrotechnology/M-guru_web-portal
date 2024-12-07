@@ -89,7 +89,8 @@ async def updateBatch(db:Session=Depends(get_db),
 @router.post("/delete_batch")
 async def deleteBatch(db:Session=Depends(get_db),
                      token:str = Form(...),
-                     batch_id:int = Form(...) 
+                     batch_id:int = Form(...),
+                     value: int = Form(...,description="1-> active , 2 -> inactive , 3-> delete") 
 ):
     
     
@@ -103,11 +104,20 @@ async def deleteBatch(db:Session=Depends(get_db),
     get_batch=db.query(Batch).filter(Batch.id==batch_id,Batch.status==1).first()
     if not get_batch:
         return {"status":0,"msg":"Batch Id not found"}
-    get_batch.status=-1
+    if value == 3:
+        get_batch.status=-1
+        
+    elif value == 2:
+        get_batch.status=value
+
+    elif value == 1:
+        get_batch.status=value
+    else:
+        return {"status":0,"msg":"Invalid type"}
     db.commit()
     return {
         "status" : 1,
-        "msg":"Batch deleted successfully"
+        "msg":"Batch inactived successfully" if value == 2 else "Batch deleted successfully"
     }
 
 @router.post("/list_batch")
@@ -115,6 +125,7 @@ async def listBatch(db:Session=Depends(deps.get_db),
                    token:str=Form(...),page:int=1,
                    size:int=10,
                    Batch_name:str=Form(None),
+                   active_inactive_batch: int = Form(...,description="1-> active , 2-> inactive")
                    ):
     user=get_user_token(db=db,token=token)
     if not user:
@@ -122,35 +133,35 @@ async def listBatch(db:Session=Depends(deps.get_db),
     
     if user.user_type not in [1,2]:
         return {"status":0,"msg":"Access denied"}
-    if user:
-        getBatch =  db.query(Batch).filter(Batch.status==1)
-        if Batch_name:
-            getBatch = getBatch.filter(Batch.name.like("%"+Batch_name+"%"))
-        getBatch = getBatch.order_by(Batch.id.desc())
-        totalCount= getBatch.count()
-        total_page,offset,limit=get_pagination(totalCount,page,size)
-        getBatch=getBatch.limit(limit).offset(offset).all()
-        dataList =[]
-
-        for row in getBatch:
-            dataList.append({
-                "Batch_id" :row.id,
-                "Batch_name":row.name,
-                "start_date":row.start_date.strftime("%d/%m/%Y"),
-                "end_date":row.end_date.strftime("%d/%m/%Y"),
-                "fee":row.fee,
-                "batch_count":len(row.users)
-            })
-        data=({"page":page,"size":size,"total_page":total_page,
-                "total_count":totalCount,
-                "items":dataList})
-        return {"status":1,"msg":"Success","data":data}
-    
-
-    else:
+    if not user:
         return({'status' :-1,
                 'msg' :'Sorry! your login session expired. please login again.'})
+    if active_inactive_batch:
+        getBatch =  db.query(Batch).filter(Batch.status==active_inactive_batch)
+    if Batch_name:
+        getBatch = getBatch.filter(Batch.name.like("%"+Batch_name+"%"))
+    getBatch = getBatch.order_by(Batch.id.desc())
+    totalCount= getBatch.count()
+    total_page,offset,limit=get_pagination(totalCount,page,size)
+    getBatch=getBatch.limit(limit).offset(offset).all()
+    dataList =[]
 
+    for row in getBatch:
+        dataList.append({
+                "Batch_id" :row.id,
+                "Batch_name":row.name,
+                "start_date":row.start_date.strftime("%d-%m-%Y"),
+                "end_date":row.end_date.strftime("%d-%m-%Y"),
+                "fee":row.fee,
+                "batch_count":len(row.users),
+                "status": row.status
+            })
+    data=({"page":page,"size":size,"total_page":total_page,
+                "total_count":totalCount,
+                "items":dataList})
+    return {"status":1,"msg":"Success","data":data}
+    
+        
  
     
 @router.post("/allocate_batch")
@@ -223,7 +234,7 @@ async def listBatchDetails(
     if user.user_type not in [1,2]:
         return {"status":0,"msg":"Access denied"}
     
-    batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status==1).first()
+    batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status!=-1).first()
     if not batch_data:
         return {"status":0, "msg":"Invalid batch"}
     

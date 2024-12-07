@@ -65,8 +65,8 @@ async def listTask(
     
 
     get_task = db.query(Task).filter(Task.status == 1)
-    if user.user_type == 3:
-       
+
+    if user.user_type == 3:   
             course_id = user.course_id
             batch_id = user.batch_id
 
@@ -89,7 +89,7 @@ async def listTask(
         data_list.append({
             "id":data.id,
             "created_by":data.created_by.name,
-            "name":data.name,
+            "name":data.name.capitalize(),
             "task_report_url": f"{settings.BASEURL}/{data.task_report_url}" if data.task_report_url else None,
             "from_date": data.from_date.strftime("%Y-%m-%d %H:%M") if data.from_date else None,
             "end_date": data.end_date.strftime("%Y-%m-%d %H:%M") if data.from_date else None,
