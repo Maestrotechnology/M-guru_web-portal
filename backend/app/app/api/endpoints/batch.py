@@ -323,7 +323,8 @@ async def listActiveBranchStudent(
             "address": student.address,
             "course": student.course.name if student.course else None,
             "batch_id": student.batch_id,
-            "course_id": student.course_id
+            "course_id": student.course_id,
+            
         })
         
     data=({"page":page,

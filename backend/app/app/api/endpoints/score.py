@@ -92,7 +92,7 @@ async def listScore(
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
     
-    get_student_score = db.query(Score).filter(Score.student_id==student_id,Score.status==1)
+    get_student_score = db.query(Score).join(Task,Task.id == Score.task_id).filter(Score.student_id==student_id,Score.status==1,Task.status == 1)
 
     if task_id:
         get_student_score = get_student_score.filter(Score.task_id==task_id)
@@ -143,6 +143,9 @@ async def updateScore(
     
     if description:
         get_student_score.description=description
+    else:
+        get_student_score.description=None
+        
     get_student_score.updated_at=datetime.now(settings.tz_IN)
     get_student_score.mark = mark
     db.commit()
@@ -162,6 +165,7 @@ async def deleteScore(
 
     if not get_student_score:
         return {"status":0,"msg":"Score not found"}
+    
     get_student_score.status=-1
     db.commit()
     return {"status":1,"msg":"Score successfully deleted"}

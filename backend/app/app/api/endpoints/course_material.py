@@ -125,6 +125,8 @@ async def updateCourseMaterials(
     if batch_id:
         get_course_material.batch_id = batch_id
 
+    if user.user_type not in [1,2]:
+        return {"status":0,"msg":"Access denied"}
     # if deleted_material_ids:
     #     deleted_material_ids = deleted_material_ids.split(",")
         

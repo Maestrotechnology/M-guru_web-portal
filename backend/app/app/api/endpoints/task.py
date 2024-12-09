@@ -183,7 +183,7 @@ async def listTaskScore(
     ).join(
         Batch,
         User.batch_id == Batch.id
-    ).filter(Batch.status==1,Task.id==task_id)
+    ).filter(Batch.status==1,Task.id==task_id,Score.status==1)
 
     if name:
         get_score = get_score.filter(User.name.ilike(f"%{name}%"))
@@ -199,7 +199,9 @@ async def listTaskScore(
     for data in get_score:
         data_list.append({
             "score_id": data.id,
-            "student_name": data.student.name,
+            "student_name": data.student.name.capitalize(),
+            "student_username": data.student.username,
+            "course_name": data.student.course.name if data.student.course else None,
             "student_id": data.student.id,
             "mark": data.mark,
             "description": data.description,

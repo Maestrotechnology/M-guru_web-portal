@@ -1,4 +1,4 @@
-from sqlalchemy import  Column, Integer, String, DateTime,ForeignKey,Text,DECIMAL
+from sqlalchemy import  Column, Integer, String, DateTime,ForeignKey,Text,DECIMAL,Time
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 from sqlalchemy.dialects.mysql import TINYINT
@@ -10,7 +10,8 @@ class TaskDetail(Base):
     attendance_id =Column(Integer,ForeignKey("attendance.id"))
     task =Column(String(350))
     user_id=Column(Integer,ForeignKey("user.id"))
-    expected_time=Column(String(50))
+    expected_time=Column(Time)
+    mentor_time=Column(Time)
     trainer_id=Column(Integer,ForeignKey("user.id"))
     rating=Column(Integer)
     close_status=Column(TINYINT, comment="1-> close ")

@@ -94,11 +94,11 @@ async def dropDownTrainer(
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
     
-    get_user = db.query(User).filter(User.status == 1,User.user_type==2).order_by(User.username).all()
+    get_user = db.query(User).filter(User.status == 1,User.user_type==2).order_by(User.name).all()
     data_list = []
     for data in get_user:
         data_list.append({
             "id":data.id,
-            "name":data.username
+            "name":data.name
         })
     return {"status":1,"msg":"Success","data":data_list}

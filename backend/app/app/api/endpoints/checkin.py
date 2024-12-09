@@ -112,7 +112,8 @@ async def add_task(
     token: str = Form(...),
     task:str=Form(...), 
     Attendance_id:int=Form(...) ,
-    expected_time:str=Form(...),
+    expected_time:time=Form(...),
+    mentor_time:time=Form(None),
     trainer_id:str=Form(None),
     rating:str=Form(None),
     description:str=Form(None)
@@ -137,6 +138,7 @@ async def add_task(
                 description=description,
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
+                mentor_time=mentor_time,
                 user_id=user.id,
                 expected_time=expected_time,
                 trainer_id=trainer_id,
@@ -263,6 +265,8 @@ async def list_trainer_rating(
                     db: Session = Depends(get_db),
                     token: str = Form(...),
                     trainer_id:str=Form(...),
+                    from_date: datetime = Form(None),
+                    to_date: datetime = Form(None),
                     page: int = 1,
                     size: int = 10
 ):
@@ -271,7 +275,9 @@ async def list_trainer_rating(
         get_taskDetail=db.query(TaskDetail).filter(
                                                    TaskDetail.trainer_id==trainer_id,
                                                    TaskDetail.status==1).order_by(TaskDetail.id.desc())
-       
+        if from_date and to_date:
+            get_taskDetail = get_taskDetail.filter(TaskDetail.created_at >= from_date ,TaskDetail.created_at <= to_date)
+
         totalCount= get_taskDetail.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         get_taskDetail=get_taskDetail.limit(limit).offset(offset).all()
@@ -281,13 +287,15 @@ async def list_trainer_rating(
             data_list.append({
                 "TaskDetail_id":data.id,
                 "user_id":data.user_id,
+                "name":data.user.name,
                 "user_name":data.user.username,
                 "task":data.task,
+                "description":data.description,
                 "expected_time":data.expected_time,
                 "trainer_id":data.trainer_id,
                 "trainer_name":data.users.username if data.trainer_id!=None else None,
                 "rating":data.rating,
-                "created_at":data.created_at
+                "created_at":data.created_at.strftime("%Y/%m%/%d")
             })
         data=({"page":page,"size":size,"total_page":total_page,
                     "total_count":totalCount,
