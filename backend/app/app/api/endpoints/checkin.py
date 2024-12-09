@@ -56,7 +56,7 @@ async def checK_in(
             checkTodayCheckIN = (
             db.query(Attendance)
             .filter(
-                Attendance.user_id == user.id,
+                Attendance.user_id == user.id,Attendance.status == 1,
                 cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
             )
             .first()
@@ -294,3 +294,19 @@ async def list_trainer_rating(
                     "items":data_list})
         return {"status":1,"msg":"Success","data":data}
 
+
+@router.post("/check_out_automatically")
+async def list_trainer_rating(
+                    db: Session = Depends(get_db),
+                    token: str = Form(...),
+):
+    user = get_user_token(db,token=token)
+    if user:
+        checkTodayCheckIN = db.query(Attendance)\
+            .filter(Attendance.status == 1,
+                    Attendance.check_out==None,
+                    cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date())\
+                        .update({"check_out":datetime.now(settings.tz_IN)})
+        
+        db.commit()
+        return {"status":1,"msg":"Successfully updated"}
