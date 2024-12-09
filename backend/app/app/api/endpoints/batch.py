@@ -34,6 +34,10 @@ async def createBatch(db:Session=Depends(get_db),
     get_batch=db.query(Batch).filter(Batch.status==1,Batch.name==name).first()
     if  get_batch:
         return {"status":0,"msg":"Batch  Name Already exit"}
+    
+    get_all_batch = db.query(Batch).filter(Batch.status != -1).update({Batch.status: 2})
+    db.commit()
+
     addBatch =  Batch(
                     name=name,
                     start_date = start_date,
@@ -101,17 +105,15 @@ async def deleteBatch(db:Session=Depends(get_db),
     if user.user_type !=1:
         return {"status":0,"msg":"Access denied"}
     
-    get_batch=db.query(Batch).filter(Batch.id==batch_id,Batch.status==1).first()
+    get_batch=db.query(Batch).filter(Batch.id==batch_id).first()
     if not get_batch:
         return {"status":0,"msg":"Batch Id not found"}
     if value == 3:
         get_batch.status=-1
         
-    elif value == 2:
+    elif value == 2 or value == 1:
         get_batch.status=value
 
-    elif value == 1:
-        get_batch.status=value
     else:
         return {"status":0,"msg":"Invalid type"}
     db.commit()
@@ -286,8 +288,8 @@ async def listActiveBranchStudent(
                                     name: str = Form(None),
                                     email: str = Form(None),
                                     phone: str = Form(None),
-                                    page: int = Form(1),
-                                    size: int = Form(50),
+                                    page: int = 1,
+                                    size: int = 50,
 ):
     user = get_user_token(db,token=token)
     if not user:

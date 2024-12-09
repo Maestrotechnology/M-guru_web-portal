@@ -126,7 +126,7 @@ async def list_user(
                    username:str=Form(None),
                    phoneNumber:int=Form(None),
                    page:int=1,
-                   size:int=10,
+                   size:int=50,
 ):
     user=deps.get_user_token(db=db,token=token)
     if not user:
@@ -202,6 +202,34 @@ async def deleteUser(db:Session=Depends(get_db),
     else:
         return {"status":0,"msg":"You are not authenticate to delete the user"}
                 
+@router.post("/profile")
+async def profile(
+                    db: Session = Depends(get_db),
+                    token: str = Form(...),
+):
+    user  = get_user_token(db,token=token)
+
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    return {
+        "status":1,
+        "msg":"Success",
+        "data":{
+        "user_id": user.id,
+        "name": user.name,
+        "username": user.username,
+        "phone": user.phone,
+        "address": user.address,
+        "course": user.course.name if user.course_id else None,
+        "batch": user.batch.name if user.batch_id else None,
+        "user_type": user.user_type,
+        "email": user.email,
+        "batch_start_date": user.batch.start_date.strftime("%Y-%m-%d") if user.batch_id else None,}
+    }
+    
+
+    
 
 
 

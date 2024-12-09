@@ -128,12 +128,31 @@ async def updateTask(
     if task_report_url:
         file_path, file_url = file_storage(task_report_url, task_report_url.filename)
         get_task.task_report_url = file_url
-    get_task.from_date = from_date
-    get_task.end_date = end_date
-    get_task.description = description
-    get_task.course_id = course_id
-    get_task.batch_id = batch_id
+    if from_date:
+        get_task.from_date = from_date
+    else:
+        get_task.from_date = None
+
+    if end_date:
+        get_task.end_date = end_date
+    else:
+        get_task.end_date = None
+
+    if description:
+        get_task.description = description
+    else:
+        get_task.description = None
+
+    if course_id:
+        get_task.course_id = course_id
+    else:
+        get_task.course_id = None
+    if batch_id:
+        get_task.batch_id = batch_id
+    else:
+        get_task.batch_id = None
     get_task.name = name
+
     db.add(get_task)
     db.commit()
     return {"status":1,"msg":"Task updated successfully"}
@@ -163,8 +182,8 @@ async def listTaskScore(
                         task_id: int = Form(...),
                         name: str = Form(None),
                         username: str = Form(None),
-                        page: int = Form(1),
-                        size: int = Form(50)
+                        page: int = 1,
+                        size: int = 50
 ):
     user = get_user_token(db,token=token)
     if not user:

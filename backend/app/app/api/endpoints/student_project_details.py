@@ -45,8 +45,8 @@ async def listStudentProject(
                                 # batch_id: int = Form(None),
                                 course_id: int = Form(None),
                                 task_id: int = Form(None),
-                                page: int = Form(1),
-                                size: int = Form(10)
+                                page: int = 1,
+                                size: int = 50
 ):
     user = get_user_token(db,token=token)
     if not user:
@@ -95,7 +95,8 @@ async def listStudentProject(
             "task_id": project.task_id,
             "task": project.task.name,
             "student_id": project.user_id,
-            "user_name": project.student.name,
+            "user_name": project.student.username,
+            "name": project.student.name,
             "project" : f"{settings.BASEURL}/{project.project_url}",
             # "course_id": project.task.course ,
             "created_at": project.created_at
