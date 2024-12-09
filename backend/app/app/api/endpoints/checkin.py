@@ -50,7 +50,7 @@ async def checK_in(
         distance = calculate_distance(latitude, longitude, office_lat, office_lon)
 
         
-        if distance > 100:
+        if distance > 200:
             return {"status": 0, "msg": "You are too from the check in location"}
         if check_in_out==1:
             checkTodayCheckIN = (
@@ -74,19 +74,6 @@ async def checK_in(
                 user_id=user.id
             )
             db.add(addAttendance)
-            db.commit()
-            addWorkHistory = WorkHistory(
-                attendance_id=addAttendance.id,
-                break_time=datetime.now(settings.tz_IN),
-                status=1,
-                created_at=datetime.now(settings.tz_IN),
-                Ispaused=2
-
-                
-            )
-            db.add(addWorkHistory)
-            
-
             db.commit()
             return {"status":1,"msg":"check In sucessfully"}
         if check_in_out==2:
@@ -156,17 +143,18 @@ async def add_task(
 async def list_task_detail(
                     db: Session = Depends(get_db),
                     token: str = Form(...),
-                   
+                    user_id:int=Form(None),
                     page: int = 1,
                     size: int = 10
 ):
     user = get_user_token(db,token=token)
     if user:
-        priority=["","High","medium","low"]
-        get_taskDetail=db.query(TaskDetail).filter(
-                                                   TaskDetail.user_id==user.id,
-                                                   TaskDetail.status==1).order_by(TaskDetail.id.desc())
-       
+        get_taskDetail=db.query(TaskDetail).filter(TaskDetail.status==1).order_by(TaskDetail.id.desc())
+        if user.user_type==3:
+            get_taskDetail=get_taskDetail.filter(TaskDetail.user_id==user.id)
+        else:
+            get_taskDetail=get_taskDetail.filter(TaskDetail.user_id==user_id)
+
         totalCount= get_taskDetail.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         get_taskDetail=get_taskDetail.limit(limit).offset(offset).all()
@@ -187,7 +175,8 @@ async def list_task_detail(
                     "total_count":totalCount,
                     "items":data_list})
         return {"status":1,"msg":"Success","data":data}
-
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
 
 
 
