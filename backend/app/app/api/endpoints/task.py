@@ -65,8 +65,8 @@ async def listTask(
     
 
     get_task = db.query(Task).filter(Task.status == 1)
-    if user.user_type == 3:
-       
+
+    if user.user_type == 3:   
             course_id = user.course_id
             batch_id = user.batch_id
 
@@ -89,7 +89,7 @@ async def listTask(
         data_list.append({
             "id":data.id,
             "created_by":data.created_by.name,
-            "name":data.name,
+            "name":data.name.capitalize(),
             "task_report_url": f"{settings.BASEURL}/{data.task_report_url}" if data.task_report_url else None,
             "from_date": data.from_date.strftime("%Y-%m-%d %H:%M") if data.from_date else None,
             "end_date": data.end_date.strftime("%Y-%m-%d %H:%M") if data.from_date else None,
@@ -183,7 +183,7 @@ async def listTaskScore(
     ).join(
         Batch,
         User.batch_id == Batch.id
-    ).filter(Batch.status==1,Task.id==task_id)
+    ).filter(Batch.status==1,Task.id==task_id,Score.status==1)
 
     if name:
         get_score = get_score.filter(User.name.ilike(f"%{name}%"))
@@ -199,7 +199,9 @@ async def listTaskScore(
     for data in get_score:
         data_list.append({
             "score_id": data.id,
-            "student_name": data.student.name,
+            "student_name": data.student.name.capitalize(),
+            "student_username": data.student.username,
+            "course_name": data.student.course.name if data.student.course else None,
             "student_id": data.student.id,
             "mark": data.mark,
             "description": data.description,

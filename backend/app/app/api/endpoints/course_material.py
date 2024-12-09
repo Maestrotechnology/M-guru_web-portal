@@ -52,6 +52,7 @@ async def listCourseMaterials(
                                 token: str = Form(...),
                                 course_material_id: int = Form(None),
                                 course_id: int = Form(...),
+                                name: str = Form(None),
                                 page:int=1,
                                 size:int=50,
 ):
@@ -66,9 +67,13 @@ async def listCourseMaterials(
         get_course_materials = get_course_materials.filter(CourseMaterial.id == course_material_id)
 
     if user.user_type == 3:
-        get_course_materials = get_course_materials.filter(CourseMaterial.batch_id!=None)
+        
+        get_course_materials = get_course_materials.filter(CourseMaterial.batch_id==user.batch_id)
 
-    get_course_materials = get_course_materials.order_by(CourseMaterial.id)
+    if name:
+        get_course_materials = get_course_materials.filter(CourseMaterial.name.like(f"%{name}%"))
+
+    get_course_materials = get_course_materials.order_by(CourseMaterial.name)
     totalCount= get_course_materials.count()
     total_page,offset,limit=get_pagination(totalCount,page,size)
     get_course_materials=get_course_materials.limit(limit).offset(offset).all()
@@ -77,12 +82,17 @@ async def listCourseMaterials(
     for data in get_course_materials:
         data_list.append({
             "id": data.id,
-            "name": data.name,
+            "name": data.name.capitalize(),
             "description": data.description,
             "course_id": data.course_id,
             "course_name": data.course.name,
             "created_by": data.created_by.name,
-            "documents": [f"{settings.BASEURL}/{doc.file_url}" for doc in data.documents] if data.documents else None
+            "batch_id": data.batch_id,
+            "batch": data.batch.name if data.batch else None,
+            "created_at": data.created_at.strftime("%Y-%m-%d"),
+            "updated_at": data.updated_at.strftime("%Y-%m-%d"),
+            "documents": [{"id": doc.id, "url": f"{settings.BASEURL}/{doc.file_url}"} for doc in data.documents] if data.documents else None
+
         })           
     data=({"page":page,
            "size":size,
@@ -101,7 +111,8 @@ async def updateCourseMaterials(
                                 description: str = Form(),
                                 name: str = Form(),
                                 list_material: list[UploadFile] = File(None),
-                                batch_id: int = Form(None)
+                                batch_id: int = Form(None),
+                                # deleted_material_ids: str = Form(None)
 ):
     user = get_user_token(db=db,token=token)
     if not user:
@@ -113,6 +124,18 @@ async def updateCourseMaterials(
     
     if batch_id:
         get_course_material.batch_id = batch_id
+
+    if user.user_type not in [1,2]:
+        return {"status":0,"msg":"Access denied"}
+    # if deleted_material_ids:
+    #     deleted_material_ids = deleted_material_ids.split(",")
+        
+    #     materials_to_update = db.query(CourseMedia).filter(CourseMedia.id.in_(deleted_material_ids)).all()
+        
+    #     for material in materials_to_update:
+    #         material.status = -1
+        
+    #     db.commit()
 
     get_course_material.course_id = course_id
     get_course_material.description = description
@@ -160,3 +183,21 @@ async def deleteCourseMaterial(
     db.add(course_material)
     db.commit()
     return {"status":0,"msg":"Material deleted successfully"}
+
+@router.post("/delete_course_media")
+async def deleteCourseMedia(
+                            db: Session = Depends(get_db),
+                            token: str = Form(...),
+                            course_media_id: int = Form(...)
+):
+    user = get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    if user.user_type not in [1,2]:
+        return {"status":0,"msg":"Access denied"}
+    
+    course_media = db.query(CourseMedia).filter(CourseMedia.id == course_media_id).first()
+    db.delete(course_media)
+    db.commit()
+    return {"status":1,"msg":"Successfully deleted"}

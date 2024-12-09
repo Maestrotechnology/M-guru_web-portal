@@ -57,13 +57,28 @@ async def listStudentProject(
     else:
         batch = db.query(Batch).filter(Batch.status==1).first()
 
-        get_projects = db.query(
-                StudentProjectDetail
-            ).join(User,User.id == StudentProjectDetail.user_id).filter(StudentProjectDetail.status == 1,User.batch_id==batch.id)
+        # get_projects = db.query(
+        #         StudentProjectDetail
+        #     ).join(User,User.id == StudentProjectDetail.user_id).filter(StudentProjectDetail.status == 1,User.batch_id==batch.id)
+
+        get_projects = db.query(StudentProjectDetail).join(
+            User, User.id == StudentProjectDetail.user_id  
+        ).outerjoin(
+            Score,  
+            (Score.task_id == StudentProjectDetail.task_id) &
+            (Score.student_id == StudentProjectDetail.user_id) &
+            (Score.status == 1)  
+        ).filter(
+            StudentProjectDetail.status == 1,  
+            User.batch_id == batch.id,  #
+            Score.id.is_(None)  
+        )
 
     if course_id:
             get_projects = get_projects.filter(User.course_id==course_id)
         
+    if task_id:
+        get_projects = get_projects.filter(StudentProjectDetail.task_id == task_id)
 
     get_project_count = get_projects.count()
     totalPages,offset,limit = get_pagination(get_project_count,page,size)
@@ -82,6 +97,7 @@ async def listStudentProject(
             "student_id": project.user_id,
             "user_name": project.student.name,
             "project" : f"{settings.BASEURL}/{project.project_url}",
+            # "course_id": project.task.course ,
             "created_at": project.created_at
         })
 
@@ -123,7 +139,7 @@ async def updateProject(
     get_project.project_start_date = project_start_date
     get_project.project_end_date = project_end_date
     get_project.task_id = task_id
-
+    db.commit()
     return {"status":1, "msg":"Successfully project updateted"}
 
 @router.post("/delete_project")
