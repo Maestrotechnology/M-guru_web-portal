@@ -135,9 +135,7 @@ async def listBatch(db:Session=Depends(deps.get_db),
     
     if user.user_type not in [1,2]:
         return {"status":0,"msg":"Access denied"}
-    if not user:
-        return({'status' :-1,
-                'msg' :'Sorry! your login session expired. please login again.'})
+
     if active_inactive_batch:
         getBatch =  db.query(Batch).filter(Batch.status==active_inactive_batch)
     if Batch_name:
@@ -235,6 +233,8 @@ async def listBatchDetails(
     
     if user.user_type not in [1,2]:
         return {"status":0,"msg":"Access denied"}
+    if user.user_type == 2:
+        course_id = user.course_id
     
     batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status!=-1).first()
     if not batch_data:

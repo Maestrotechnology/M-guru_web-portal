@@ -94,7 +94,7 @@ async def listCourse(
     
     if Course_name:
            getCourse = getCourse.filter(Course.name.like("%"+Course_name+"%"))
-    if user.user_type == 3:
+    if user.user_type == 3 or user.user_type == 2:
         getCourse = getCourse.filter(Course.id == user.course_id)
         
     getCourse = getCourse.order_by(Course.name)
