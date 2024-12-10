@@ -10,6 +10,9 @@ class Course(Base):
     id = Column(Integer, primary_key=True,index=True)
     name = Column(String(50))
     status = Column(TINYINT, comment="1-> active , 2-> inactive")
+    image = Column(String(255))
+    color1=Column(String(255))
+    color2=Column(String(255))
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
 

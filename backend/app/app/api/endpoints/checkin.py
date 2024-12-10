@@ -51,7 +51,7 @@ async def checK_in(
 
         
         if distance > 200:
-            return {"status": 0, "msg": "You are too from the check in location"}
+            return {"status": 0, "msg": "You are too for away from the check in location"}
         if check_in_out==1:
             checkTodayCheckIN = (
             db.query(Attendance)
