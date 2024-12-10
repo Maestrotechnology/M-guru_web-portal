@@ -98,25 +98,14 @@ async def listCourse(
                    Course_name:str=Form(None),
 ):
     user=get_user_token(db=db,token=token)
-<<<<<<< HEAD
     if  user:
+       
         getCourse =  db.query(Course).filter(Course.status ==1)
-=======
-    if not user:
-        return {"status":0,"msg":"Your login session expires.Please login again."}
-    getCourse =  db.query(Course).filter(Course.status ==1)
-    
-    
-    if Course_name:
-           getCourse = getCourse.filter(Course.name.like("%"+Course_name+"%"))
-    if user.user_type == 3 or user.user_type == 2:
-        getCourse = getCourse.filter(Course.id == user.course_id)
->>>>>>> 638855544d8f191e72f36a25684502b806292a1a
         
         
         if Course_name:
             getCourse = getCourse.filter(Course.name.like("%"+Course_name+"%"))
-        if user.user_type == 3:
+        if user.user_type == 3 or user.user_type == 2:
             getCourse = getCourse.filter(Course.id == user.course_id)
             
         getCourse = getCourse.order_by(Course.name)
@@ -124,7 +113,7 @@ async def listCourse(
         total_page,offset,limit=get_pagination(totalCount,page,size)
         getCourse=getCourse.limit(limit).offset(offset).all()
         dataList =[]
-
+    
         for row in getCourse:
                 dataList.append({
                     "course_id" :row.id,
@@ -136,12 +125,9 @@ async def listCourse(
                     "total_count":totalCount,
                     "items":dataList})
         return {"status":1,"msg":"Success","data":data}
-    
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
-
-
-
+    
 
 
 
