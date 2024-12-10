@@ -16,7 +16,8 @@ async def enterScore(
                         student_ids: str = Form(),
                         marks: str = Form(...),
                         task_name: str = Form(None),
-                        description: str = Form(None)
+                        description: str = Form(None),
+                        project_ids: str = Form(None)
 ):
     user = get_user_token(db,token=token)
     if not user:
@@ -32,8 +33,9 @@ async def enterScore(
     if len(get_students_ids)!=len(get_marks):
         return {"status":0, "msg":"Invaild details"}
     
-    if task_ids:
+    if task_ids and project_ids:
         get_task_ids = task_ids.split(",")
+        get_project_ids = project_ids.split(",")
         if len(get_students_ids)!=len(get_marks) and len(get_task_ids)!=len(get_students_ids) and len(get_marks)!=len(get_task_ids):
             return {"status":0, "msg":"Invaild details"}
         
@@ -46,7 +48,8 @@ async def enterScore(
                 mark = get_marks[index],
                 task_id = get_task_ids[index],
                 student_id = get_students_ids[index],
-                teacher_id = user.id
+                teacher_id = user.id,
+                student_project_id = get_project_ids[index]
             )
             db.add(create_score)
         db.commit()
@@ -170,7 +173,41 @@ async def deleteScore(
     db.commit()
     return {"status":1,"msg":"Score successfully deleted"}
 
+@router.post("/enter_induvial_score")
+async def enterInduvialScore(
+                                db:Session=Depends(get_db),
+                        token:str = Form(...),
+                        task_id: str = Form(...),
+                        student_id: str = Form(...),
+                        mark: str = Form(...),
+                        description: str = Form(None)
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    if user.user_type not in [1,2]:
+        return {"status":0,"msg":"Access denied"}
 
+    get_task = db.query(Task).filter(Task.status==1,Task.id==task_id).first()
+    get_student = db.query(User).filter(User.id == student_id, User.status == 1).first()
+    if not get_task:
+        return {"status":0, "msg": "Invaild task"}
+    if not get_student:
+        return {"status":0, "msg": "Student not found"}
+    
+    create_score = Score(
+            description = description,
+            status = 1,
+            created_at = datetime.now(settings.tz_IN),
+            updated_at = datetime.now(settings.tz_IN),
+            mark = mark,
+            task_id = task_id,
+            student_id = student_id,
+            teacher_id = user.id
+        )
+    db.add(create_score)
+    db.commit()
+    return {"status":1, "msg": "Score entered successfully"}
     
     
     

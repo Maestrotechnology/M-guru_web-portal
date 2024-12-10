@@ -16,8 +16,10 @@ class Score(Base):
     task_id = Column(Integer,ForeignKey("task.id"))
     student_id = Column(Integer, ForeignKey("user.id"))
     teacher_id = Column(Integer, ForeignKey("user.id"))
+    student_project_id = Column(Integer, ForeignKey("student_project_detail.id"))
 
     # relationship
+    project_detail = relationship("StudentProjectDetail",back_populates="score")
     task = relationship("Task", back_populates="scores")
     student = relationship("User", foreign_keys=[student_id], back_populates="scores_as_student")
     teacher = relationship("User", foreign_keys=[teacher_id], back_populates="scores_as_teacher")

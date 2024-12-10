@@ -150,8 +150,8 @@ async def listBatch(db:Session=Depends(deps.get_db),
         dataList.append({
                 "Batch_id" :row.id,
                 "Batch_name":row.name,
-                "start_date":row.start_date.strftime("%d-%m-%Y"),
-                "end_date":row.end_date.strftime("%d-%m-%Y"),
+                "start_date":row.start_date,#.strftime("%d-%m-%Y %H:%M"),
+                "end_date":row.end_date,#.strftime("%d-%m-%Y %H:%M"),
                 "fee":row.fee,
                 "batch_count":len(row.users),
                 "status": row.status

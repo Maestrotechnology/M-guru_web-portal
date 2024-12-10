@@ -13,7 +13,7 @@ async def createCourseMaterial(
                                 db: Session = Depends(get_db),
                                 token: str = Form(...),
                                 course_id: int = Form(...),
-                                description: str = Form(),
+                                description: str = Form(None),
                                 name: str = Form(),
                                 list_material: list[UploadFile] = File(None)
 ):
@@ -108,7 +108,7 @@ async def updateCourseMaterials(
                                 token: str = Form(...),
                                 course_material_id: int = Form(...),
                                 course_id: int = Form(...),
-                                description: str = Form(),
+                                description: str = Form(None),
                                 name: str = Form(),
                                 list_material: list[UploadFile] = File(None),
                                 batch_id: int = Form(None),

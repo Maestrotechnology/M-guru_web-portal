@@ -218,7 +218,7 @@ Wants to Change their Password"""
 
 async def changePassword(db: Session = Depends(deps.get_db),
                           token: str = Form(...)
-                          ,old_password: str = Form(None),
+                          ,old_password: str = Form(...),
                           new_password: str = Form(...),
                           repeat_password: str = Form(...)):
 
