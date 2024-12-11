@@ -116,10 +116,10 @@ async def listScore(
             "task_id":data.task_id,
             "task_name":data.task.name,
             "student_id":data.student_id,
-            "student_name":data.student.name,
+            "student_name":data.student.name.capitalize(),
             "mark_giver_id": data.teacher_id,
             "mark_giver_name":data.teacher.name,
-            "created_at":data.created_at.strftime("%Y-%m-%d"),
+            "created_at":data.created_at.strftime("%d-%m-%Y"),
             "description":data.description
         })
     data=({"page":page,"size":size,"total_page":total_page,

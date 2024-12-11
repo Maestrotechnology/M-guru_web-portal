@@ -103,7 +103,7 @@ async def listStudentProject(
             "task": project.task.name,
             "student_id": project.user_id,
             "user_name": project.student.username,
-            "name": project.student.name,
+            "name": project.student.name.capitalize(),
             "project" : f"{settings.BASEURL}/{project.project_url}",
             "course": project.student.course.name if project.student.course else None,
             # "course_id": project.task.course ,

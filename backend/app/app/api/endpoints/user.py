@@ -166,7 +166,7 @@ async def list_user(
         dataList.append({
             "batch_id":batch_id,
             "id":data.id,
-            "name":data.name,
+            "name":data.name.capitalize(),
             "username":data.username,
             "email":data.email,
             "user_type":data.user_type,

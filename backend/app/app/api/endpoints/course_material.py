@@ -20,7 +20,8 @@ async def createCourseMaterial(
     user = get_user_token(db=db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
-    
+    if user.user_type==3:
+        return {"status":0,"msg":"Access denied"}
     course_material = CourseMaterial(
         name = name,
         description = description,
@@ -73,7 +74,7 @@ async def listCourseMaterials(
     if name:
         get_course_materials = get_course_materials.filter(CourseMaterial.name.like(f"%{name}%"))
 
-    get_course_materials = get_course_materials.order_by(CourseMaterial.name)
+    get_course_materials = get_course_materials.order_by(CourseMaterial.id)
     totalCount= get_course_materials.count()
     total_page,offset,limit=get_pagination(totalCount,page,size)
     get_course_materials=get_course_materials.limit(limit).offset(offset).all()
@@ -89,8 +90,8 @@ async def listCourseMaterials(
             "created_by": data.created_by.name,
             "batch_id": data.batch_id,
             "batch": data.batch.name if data.batch else None,
-            "created_at": data.created_at.strftime("%Y-%m-%d"),
-            "updated_at": data.updated_at.strftime("%Y-%m-%d"),
+            "created_at": data.created_at.strftime("%d-%m-%Y"),
+            "updated_at": data.updated_at.strftime("%d-%m-%Y"),
             "documents": [{"id": doc.id, "url": f"{settings.BASEURL}/{doc.file_url}"} for doc in data.documents] if data.documents else None
 
         })           
@@ -182,7 +183,7 @@ async def deleteCourseMaterial(
     course_material.status = -1
     db.add(course_material)
     db.commit()
-    return {"status":0,"msg":"Material deleted successfully"}
+    return {"status":1,"msg":"Material deleted successfully"}
 
 @router.post("/delete_course_media")
 async def deleteCourseMedia(

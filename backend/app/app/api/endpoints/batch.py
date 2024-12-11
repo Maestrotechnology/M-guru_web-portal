@@ -149,7 +149,7 @@ async def listBatch(db:Session=Depends(deps.get_db),
     for row in getBatch:
         dataList.append({
                 "Batch_id" :row.id,
-                "Batch_name":row.name,
+                "Batch_name":row.name.capitalize(),
                 "start_date":row.start_date,#.strftime("%d-%m-%Y %H:%M"),
                 "end_date":row.end_date,#.strftime("%d-%m-%Y %H:%M"),
                 "fee":row.fee,
@@ -262,7 +262,7 @@ async def listBatchDetails(
     for student in students:
         dataList.append({
             "id": student.id,
-            "name": student.name,
+            "name": student.name.capitalize(),
             "email": student.email,
             "username": student.username,
             "phone": student.phone,
@@ -318,7 +318,7 @@ async def listActiveBranchStudent(
     for student in students:
         dataList.append({
             "id": student.id,
-            "name": student.name,
+            "name": student.name.capitalize(),
             "email": student.email,
             "username": student.username,
             "phone": student.phone,

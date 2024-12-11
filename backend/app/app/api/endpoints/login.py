@@ -188,9 +188,9 @@ async def verifyOtp(db:Session = Depends(deps.get_db),
     if getUser:
         if getUser.otp == str(otp):
             
-            if getUser.otpExpireAt >= datetime.now(settings.tz_IN).replace(tzinfo=None):
+            if getUser.otp_expire_at>= datetime.now(settings.tz_IN).replace(tzinfo=None):
                 getUser.otp = None
-                getUser.otpExpireAt = None
+                getUser.otp_expire_at = None
         
                 (otp, reset, created_at,
                     expire_time, expire_at,
@@ -258,7 +258,7 @@ async def resendOtp(db: Session = Depends(deps.get_db),
         otp = "123456"
         getUser.otp = otp
         getUser.reset_key = resetKey
-        getUser.otpExpireAt = expireAt
+        getUser.otp_expire_at = expireAt
         db.commit()
 
         msg=f"THANKS FOR CHOOSING OUR SERVICE YOUR SIX DIGIT OTP PIN IS {otp}"
@@ -299,12 +299,12 @@ async def forgotPassword(db: Session = Depends(deps.get_db),
     
             user = user.update({'otp': otp,
                                 'reset_key': reset_key,
-                                'otpExpireAt': expire_at})
+                                'otp_expire_at': expire_at})
             db.commit()
 
             # mblNo = f'+91{checkUser.mobile}'
             try:
-                send = await send_mail(receiver_email = checkUser.email,message = message)
+                send = await send_mail(receiver_email = checkUser.email,subject="OTP",message = message)
                 # print(message)
                 return ({'status':1,'reset_key': reset_key,
                         'msg': 

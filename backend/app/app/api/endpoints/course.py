@@ -117,7 +117,7 @@ async def listCourse(
         for row in getCourse:
                 dataList.append({
                     "course_id" :row.id,
-                    "course_name":row.name,
+                    "course_name":row.name.capitalize(),
                     "created_at":row.created_at,
                 
                 })
