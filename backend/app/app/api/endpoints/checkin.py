@@ -203,15 +203,14 @@ async def list_attendance(
                 cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
             ).first() )
             
-            if get_attendance:
+            
                
-                return {'status':1,
-                        "msg":"Success",
-                        "attendance_id": get_attendance.id ,
-                        "check_in":get_attendance.check_in,
-                        }
-            else:
-                return {'status':0,"msg":"you want to check_in"}
+            return {'status':1,
+                    "msg":"Success",
+                    "attendance_id": get_attendance.id if get_attendance else None,
+                    "check_in":get_attendance.check_in if get_attendance else None,
+                    }
+            
         if check==2:
             get_attendance=check_attendance.filter(Attendance.user_id==user.id)
         

@@ -57,7 +57,8 @@ async def login(*,db: Session = Depends(deps.get_db),
         userId = user.id
         get_batch=db.query(Batch).join(User,Batch.id==User.batch_id).filter(User.id==userId).first()
         if get_batch:
-            print("iiiiiiiii")
+            if get_batch.status!=1:
+                return {"status":0,"msg":"Your login session expires."}
             if today >get_batch.end_date:
                 return {"status":0,"msg":"Your login session expires."}
 
