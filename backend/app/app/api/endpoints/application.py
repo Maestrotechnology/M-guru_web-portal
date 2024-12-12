@@ -37,7 +37,7 @@ async def captchaCheck(captcha_token: str = Form(...)):
 
 @router.post("/create_application")
 async def createApplication(*,
-                            token: str = Form(...),
+                            # token: str = Form(...),
                             db: Annotated[Session, Depends(get_db)],
                             name: Annotated[str, Form(...)],
                             email: Annotated[EmailStr, Form(...)],
@@ -48,11 +48,11 @@ async def createApplication(*,
                             enquiry_id: Annotated[int, Form(...)],
                             course_id: Annotated[int, Form(...)]
 ):
-    user = get_user_token(db=db,token=token)
-    if not user:
-        return {"status":0,"msg":"Your login session expires.Please login again."}  
-    if user.user_type != 1:
-        return {"status":0,"msg":"Access denied"}
+    # user = get_user_token(db=db,token=token)
+    # if not user:
+    #     return {"status":0,"msg":"Your login session expires.Please login again."}  
+    # if user.user_type != 1:
+    #     return {"status":0,"msg":"Access denied"}
     get_applications = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.email==email).first()
     if get_applications:
         return {"status":0,"msg":"Give Email is already exist"}

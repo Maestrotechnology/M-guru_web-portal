@@ -257,13 +257,14 @@ async def resendOtp(db: Session = Depends(deps.get_db),
         resetKey = reset+"@ghgkhdfkjh@trhghgu"
         otp = "123456"
         getUser.otp = otp
+        print(resetKey)
         getUser.reset_key = resetKey
         getUser.otp_expire_at = expireAt
         db.commit()
 
         msg=f"THANKS FOR CHOOSING OUR SERVICE YOUR SIX DIGIT OTP PIN IS {otp}"
         try:
-            send = await send_mail(receiver_email = getUser.email,message = msg)
+            send = await send_mail(receiver_email = getUser.email,subject="OTP",message = msg)
             return ({"status": 1,"msg": "OTP sended to your email",
                  "reset_key": resetKey,
                  "remaining_seconds": 120})

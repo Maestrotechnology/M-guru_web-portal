@@ -77,7 +77,7 @@ async def updateUser(
                      email:EmailStr=Form(...),
                      phone:str=Form(...),
                      address:str=Form(None),
-                     course_id:int=Form(),
+                     course_id:int=Form(None),
                      ):
     
     user  = get_user_token(db,token=token)
@@ -88,7 +88,10 @@ async def updateUser(
     checkUser = db.query(User).filter(User.status==1)
 
     getUser = checkUser.filter(User.id == userId,User.status==1).first()
-
+    
+    if getUser.user_type == 3 and not course_id:
+        return {"status":0, "msg": "course is required"}
+        
     if not getUser:
         return {"status":0,"msg":"Given user id  not found"}
 
