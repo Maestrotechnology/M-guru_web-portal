@@ -2,6 +2,7 @@ from fastapi import APIRouter,Depends,UploadFile,Form,File
 from typing import Annotated
 from api.deps import *
 from sqlalchemy.orm import Session
+from sqlalchemy import or_,and_
 from pydantic import EmailStr
 from app.models import *
 from core.config import settings
@@ -67,8 +68,14 @@ async def listTask(
     get_task = db.query(Task).filter(Task.status == 1)
 
     if user.user_type == 3:   
-            course_id = user.course_id
-            batch_id = user.batch_id
+            # course_id = user.course_id
+            # batch_id = user.batch_id
+            get_task = get_task.filter(
+                or_(and_(Task.course_id == user.course_id,
+                Task.batch_id==user.batch_id),
+                and_(Task.batch_id==user.batch_id,
+                Task.course_id == None))
+                )
 
     if task_id:
         get_task = get_task.filter(Task.id == task_id)

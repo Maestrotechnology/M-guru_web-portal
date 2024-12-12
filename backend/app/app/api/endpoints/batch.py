@@ -119,7 +119,7 @@ async def deleteBatch(db:Session=Depends(get_db),
     db.commit()
     return {
         "status" : 1,
-        "msg":"Batch inactived successfully" if value == 2 else "Batch deleted successfully"
+        "msg":"Batch activated successfully" if value == 1 else "Batch inactived successfully" if value == 2 else "Batch deleted successfully"
     }
 
 @router.post("/list_batch")
@@ -190,9 +190,9 @@ async def allocateBatch(token:str=Form(...),
     
     checkUser = db.query(User).filter(User.status==1)
 
-    if checkUser.filter(User.email == application_data.email).first():
+    if checkUser.filter(User.email == application_data.email,User.batch_id==batch_id).first():
         return {"status":0,"msg":"Give Email is already exist"}
-    if checkUser.filter(User.phone==application_data.phone).first():
+    if checkUser.filter(User.phone==application_data.phone,User.batch_id==batch_id).first():
         return {"status":0,"msg":"Given Phone Number is already exist"}
     
     await send_mail(receiver_email=application_data.email,message=get_email_templete(application_data,batch_data.start_date,4),subject="Application status")
