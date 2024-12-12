@@ -38,6 +38,7 @@ async def login(*,db: Session = Depends(deps.get_db),
                 otp: str = Form(None)):
     
     ip = ip
+    today=datetime.now()
     if device_id:
         auth_text = device_id + str(userName)
     else:
@@ -54,6 +55,13 @@ async def login(*,db: Session = Depends(deps.get_db),
     else:
         key = None
         userId = user.id
+        get_batch=db.query(Batch).join(User,Batch.id==User.batch_id).filter(User.id==userId).first()
+        if get_batch:
+            print("iiiiiiiii")
+            if today >get_batch.end_date:
+                return {"status":0,"msg":"Your login session expires."}
+
+            
 
         if otp:
             user.otp = otp
@@ -338,36 +346,36 @@ async def resetPassword(db:Session=Depends(deps.get_db),
         return {"status":-1,"msg":"You cannot change the password at this moment.Please try later."}
     
 
-@router.post("/changeUserPassword")
+# @router.post("/changeUserPassword")
 
-async def changeUserPassword(db: Session = Depends(deps.get_db),
-                          token: str = Form(...),
+# async def changeUserPassword(db: Session = Depends(deps.get_db),
+#                           token: str = Form(...),
                           
-                          new_password: str = Form(...),
-                          confirm_password: str = Form(...),
-                          userId:int=Form(...)):
+#                           new_password: str = Form(...),
+#                           confirm_password: str = Form(...),
+#                           userId:int=Form(...)):
 
-    user = deps.get_user_token(db = db,token = token)
-    if user:
+#     user = deps.get_user_token(db = db,token = token)
+#     if user:
         
         
-        get_user=db.query(User).filter(User.id==userId,User.status==1).first()
-        if not get_user:
-            return ({"status":0,"msg":"user not Found"})
+#         get_user=db.query(User).filter(User.id==userId,User.status==1).first()
+#         if not get_user:
+#             return ({"status":0,"msg":"user not Found"})
+#         if 
 
 
-
-        if new_password!=confirm_password:
-            return ({"status":0,"msg":"Password is not match."})
+#         if new_password!=confirm_password:
+#             return ({"status":0,"msg":"Password is not match."})
         
-        else:           
-            get_user.password = get_password_hash(new_password)
-            db.commit()
+#         else:           
+#             get_user.password = get_password_hash(new_password)
+#             db.commit()
 
-            return ({"status": 1,"msg": "Password successfully updated."})
+#             return ({"status": 1,"msg": "Password successfully updated."})
         
-    else:  
-        return ({"status":-1,"msg":"Login session expires"})
+#     else:  
+#         return ({"status":-1,"msg":"Login session expires"})
     
 # @router.post("/signupUser")
 # async def signupUser(db: Session = Depends(deps.get_db),
