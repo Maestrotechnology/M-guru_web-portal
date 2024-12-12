@@ -24,7 +24,7 @@ async def dropDownCourse(db:Session = Depends(deps.get_db),
             for row in getAllCourse:
                 dataList.append({
                     "Course_Id":row.id,
-                    "Course_name":row.name
+                    "Course_name":row.name.capitalize()
                 })
         return {"status":1,"msg":"Success","data":dataList}
     else:
@@ -42,7 +42,7 @@ async def dropDownBatch(db:Session = Depends(deps.get_db),
             for row in getAllBatch:
                 dataList.append({
                     "Batch_Id":row.id,
-                    "Batch_name":row.name
+                    "Batch_name":row.name.capitalize()
                 })
         return {"status":1,"msg":"Success","data":dataList}
     else:
@@ -60,7 +60,7 @@ async def dropDownEnquiry(db:Session = Depends(deps.get_db),
             for row in getAllEnquiry:
                 dataList.append({
                     "EnquiryType_Id":row.id,
-                    "EnquiryType_name":row.name
+                    "EnquiryType_name":row.name.capitalize()
                 })
         return {"status":1,"msg":"Success","data":dataList}
     else:
@@ -80,7 +80,7 @@ async def dropDownTask(
     for data in get_task:
         data_list.append({
             "id":data.id,
-            "name":data.name
+            "name":data.name.capitalize()
         })
     return {"status":1,"msg":"Success","data":data_list}
     
@@ -97,6 +97,25 @@ async def dropDownTrainer(
     get_user = db.query(User).filter(User.status == 1,User.user_type==2).order_by(User.name).all()
     data_list = []
     for data in get_user:
+        data_list.append({
+            "id":data.id,
+            "name":data.name.capitalize()
+        })
+    return {"status":1,"msg":"Success","data":data_list}
+
+
+@router.post("/dropdown_year")
+async def dropdownYear(
+                        db:Session = Depends(deps.get_db),
+                        token:str=Form(...)
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    get_year = db.query(PassoutYear).all()
+    data_list = []
+    for data in get_year:
         data_list.append({
             "id":data.id,
             "name":data.name

@@ -99,7 +99,7 @@ async def listEnquiry(db:Session=Depends(deps.get_db),
         for row in getEnquiry:
             dataList.append({
                 "EnquiryType_id" :row.id,
-                "EnquiryType_name":row.name,
+                "EnquiryType_name":row.name.capitalize(),
                 "created_at":row.created_at,
             
             })

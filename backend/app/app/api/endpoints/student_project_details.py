@@ -56,23 +56,30 @@ async def listStudentProject(
         get_projects = db.query(StudentProjectDetail).filter(StudentProjectDetail.status==1,StudentProjectDetail.user_id==user.id)
     else:
         batch = db.query(Batch).filter(Batch.status==1).first()
-
+        if not batch:
+            return {"status":0,"msg":"None of the batches are active"}
         # get_projects = db.query(
         #         StudentProjectDetail
         #     ).join(User,User.id == StudentProjectDetail.user_id).filter(StudentProjectDetail.status == 1,User.batch_id==batch.id)
 
+        # get_projects = db.query(StudentProjectDetail).join(
+        #     User, User.id == StudentProjectDetail.user_id  
+        # ).outerjoin(
+        #     Score,  
+        #     (Score.task_id == StudentProjectDetail.task_id) &
+        #     (Score.student_id == StudentProjectDetail.user_id) &
+        #     (Score.status == 1)  
+        # ).filter(
+        #     StudentProjectDetail.status == 1,  
+        #     User.batch_id == batch.id,  
+        #     Score.id.is_(None)  
+        # )
         get_projects = db.query(StudentProjectDetail).join(
-            User, User.id == StudentProjectDetail.user_id  
+            User, User.id == StudentProjectDetail.user_id
         ).outerjoin(
-            Score,  
-            (Score.task_id == StudentProjectDetail.task_id) &
-            (Score.student_id == StudentProjectDetail.user_id) &
-            (Score.status == 1)  
-        ).filter(
-            StudentProjectDetail.status == 1,  
-            User.batch_id == batch.id,  #
-            Score.id.is_(None)  
-        )
+            Score,
+            Score.student_project_id == StudentProjectDetail.id
+        ).filter(User.batch_id == batch.id,StudentProjectDetail.status == 1,Score.id.is_(None))
 
     if course_id:
             get_projects = get_projects.filter(User.course_id==course_id)
@@ -89,15 +96,16 @@ async def listStudentProject(
     for project in get_projects:
         data_list.append({
             "id": project.id,
-            "project_start_date": project.project_start_date,
-            "project_end_date": project.project_end_date,
+            "project_start_date": project.project_start_date.strftime("%Y-%m-%d %H:%M"),
+            "project_end_date": project.project_end_date.strftime("%Y-%m-%d %H:%M"),
             "description": project.description,
             "task_id": project.task_id,
             "task": project.task.name,
             "student_id": project.user_id,
             "user_name": project.student.username,
-            "name": project.student.name,
+            "name": project.student.name.capitalize(),
             "project" : f"{settings.BASEURL}/{project.project_url}",
+            "course": project.student.course.name if project.student.course else None,
             # "course_id": project.task.course ,
             "created_at": project.created_at
         })

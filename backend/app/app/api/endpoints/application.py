@@ -2,12 +2,14 @@ from fastapi import APIRouter,Depends,UploadFile,Form,File
 from typing import Annotated
 from api.deps import *
 from sqlalchemy.orm import Session
+from sqlalchemy import and_,cast,Date
 from pydantic import EmailStr
 from app.models import *
 from core.config import settings
 from datetime import datetime
 from utils import file_storage,send_mail,get_pagination
 from app.api.endpoints.email_templetes import get_email_templete
+from datetime import date
 
 router = APIRouter()
 
@@ -35,7 +37,7 @@ async def captchaCheck(captcha_token: str = Form(...)):
 
 @router.post("/create_application")
 async def createApplication(*,
-                            token: str = Form(...),
+                            # token: str = Form(...),
                             db: Annotated[Session, Depends(get_db)],
                             name: Annotated[str, Form(...)],
                             email: Annotated[EmailStr, Form(...)],
@@ -46,11 +48,11 @@ async def createApplication(*,
                             enquiry_id: Annotated[int, Form(...)],
                             course_id: Annotated[int, Form(...)]
 ):
-    user = get_user_token(db=db,token=token)
-    if not user:
-        return {"status":0,"msg":"Your login session expires.Please login again."}  
-    if user.user_type != 1:
-        return {"status":0,"msg":"Access denied"}
+    # user = get_user_token(db=db,token=token)
+    # if not user:
+    #     return {"status":0,"msg":"Your login session expires.Please login again."}  
+    # if user.user_type != 1:
+    #     return {"status":0,"msg":"Access denied"}
     get_applications = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.email==email).first()
     if get_applications:
         return {"status":0,"msg":"Give Email is already exist"}
@@ -143,8 +145,11 @@ async def listApplication(*,
                             phone: Annotated[str, Form()] = None,
                             course_id: Annotated[int, Form()] = None,
                             enquiry_id: Annotated[int, Form()] = None,
+                            from_date: Annotated[date , Form()] = None,
+                            to_date: Annotated[date, Form()] = None,
                             page: Annotated[int, Form()] = 1,
                             size: Annotated[int, Form()] = 10,
+
 ):
     user = get_user_token(db=db,token=token)
     if not user:
@@ -177,6 +182,34 @@ async def listApplication(*,
         )
     else:
         return {"status": 0, "msg":"Invaild type"}
+    if from_date and to_date:
+        if type == 2:
+            db_applications = (
+                                db_applications
+                                .filter(
+                                    and_(
+                                        Interview.scheduled_date >= from_date,
+                                        Interview.scheduled_date <= to_date,
+                                    )
+                                )
+                            )
+        elif type == 3 or type ==6 or type == 5:
+            db_applications = (
+                                db_applications
+                                .filter(
+                                    and_(
+                                        Interview.attended_date >= from_date,
+                                        Interview.attended_date <= to_date,
+                                    )
+                                )
+                            )
+        else:
+            db_applications = db_applications.filter(
+                ApplicationDetails.created_at >=from_date,
+                ApplicationDetails.created_at >=to_date,
+            )
+        
+    
     
     if id:
         application_ids = id.split(",")
@@ -199,7 +232,7 @@ async def listApplication(*,
         data_list.append(
             {
                 "id":application.id,
-                "name":application.name,
+                "name":application.name.capitalize(),
                 "email":application.email,
                 "phone":application.phone,
                 "resume":f"{settings.BASEURL}/{application.resume}" if application.resume else None,
@@ -304,8 +337,8 @@ async def enterInterviewMarks(*,
                               db: Annotated[Session, Depends(get_db)],
                               application_id: Annotated[int, Form(...)],
                               attended_date: Annotated[datetime, Form(...)],
-                              communication_mark: Annotated[int, Form(...)],
-                              aptitude_mark: Annotated[int, Form(...)],
+                              communication_mark: Annotated[int, Form()] = None,
+                              aptitude_mark: Annotated[int, Form()] = None,
                               programming_mark: Annotated[int, Form(...)],
                               overall_mark: Annotated[int, Form(...)],
                               application_status: Annotated[int, Form(description="1-> seleted 2->not seleted 3->waiting list")]=None,
@@ -323,13 +356,10 @@ async def enterInterviewMarks(*,
 
     if not db_interview_details:
         return {"status":0, "msg":"Invalid interview details"}
-    if application_status==1:
-        db_interview_details.application.application_status=1
+    if application_status:
+        db_interview_details.application.application_status=application_status
         db_interview_details.application.scholarship=scholarship
-    elif application_status==2:
-        db_interview_details.application.application_status=2
-    elif application_status==3:
-        db_interview_details.application.application_status=3
+   
 
     db_interview_details.attended_date = attended_date
     db_interview_details.communication_mark = communication_mark

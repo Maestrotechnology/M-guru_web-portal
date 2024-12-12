@@ -100,13 +100,13 @@ def get_email_templete(application = None,scheduled_date=None,status=None,subjec
         </body>
         </html>
         """
-    elif status == 4:
+    elif status == 4:#allocate batch
         return f"""
         <html>
         <body>
             <h1>Application Update</h1>
-            <p>Your application has been moved to the waiting list.</p>
-            <p>We will notify you about any updates or changes.</p>
+            <p>batch allocated</p>
+            <p></p>
         </body>
         </html>
         """

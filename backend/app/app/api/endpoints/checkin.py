@@ -50,8 +50,8 @@ async def checK_in(
         distance = calculate_distance(latitude, longitude, office_lat, office_lon)
 
         
-        if distance > 200:
-            return {"status": 0, "msg": "You are too for away from the check in location"}
+        # if distance > 200:
+        #     return {"status": 0, "msg": "You are too for away from the check in location"}
         if check_in_out==1:
             checkTodayCheckIN = (
             db.query(Attendance)
@@ -169,6 +169,7 @@ async def list_task_detail(
                 "task":data.task,
                 "expected_time":data.expected_time,
                 "trainer_id":data.trainer_id,
+                "date":data.created_at.strftime("%d-%m-%Y"),
                 "trainer_name":data.users.username if data.trainer_id!=None else None
             })
         data=({"page":page,"size":size,"total_page":total_page,
@@ -276,7 +277,7 @@ async def list_trainer_rating(
             data_list.append({
                 "TaskDetail_id":data.id,
                 "user_id":data.user_id,
-                "name":data.user.name,
+                "name":data.user.name.capitalize(),
                 "user_name":data.user.username,
                 "task":data.task,
                 "description":data.description,
@@ -284,7 +285,7 @@ async def list_trainer_rating(
                 "trainer_id":data.trainer_id,
                 "trainer_name":data.users.username if data.trainer_id!=None else None,
                 "rating":data.rating,
-                "created_at":data.created_at.strftime("%Y/%m%/%d")
+                "created_at":data.created_at
             })
         data=({"page":page,"size":size,"total_page":total_page,
                     "total_count":totalCount,

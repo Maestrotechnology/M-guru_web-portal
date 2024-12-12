@@ -22,6 +22,7 @@ class StudentProjectDetail(Base):
     user_id = Column(Integer,ForeignKey("user.id"))
 
     # relationship
+    score = relationship("Score", back_populates="project_detail")
     task = relationship("Task", back_populates="project_details")
     student = relationship("User",back_populates="project_details")
     
