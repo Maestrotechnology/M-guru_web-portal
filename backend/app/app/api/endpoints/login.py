@@ -100,21 +100,21 @@ async def login(*,db: Session = Depends(deps.get_db),
 
             db.add(addToken)
             db.commit()
-            checkTodayCheckIN = (
-            db.query(Attendance)
-            .filter(
-                Attendance.user_id == user.id,
-                cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
-            )
-            .first()
-        )
+        #     checkTodayCheckIN = (
+        #     db.query(Attendance)
+        #     .filter(
+        #         Attendance.user_id == user.id,
+        #         cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
+        #     )
+        #     .first()
+        # )
             return {'status':1,
                 'token': key,
                 "user_id":user.id,
                 "user_type":user.user_type,
                 'msg': 'Successfully LoggedIn.',  
                 'status': 1,
-                "checkin_time":checkTodayCheckIN.check_in if checkTodayCheckIN else None
+                # "checkin_time":checkTodayCheckIN.check_in if checkTodayCheckIN else None
                 }
 
         
