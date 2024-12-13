@@ -9,7 +9,7 @@ class Batch(Base):
 
     id = Column(Integer,primary_key=True,index=True)
     name = Column(String(50))
-    description = Column(String(50))
+    description = Column(String(350))
     start_date = Column(DateTime)
     end_date = Column(DateTime)
     fee = Column(Integer)
@@ -23,4 +23,5 @@ class Batch(Base):
     applications = relationship("ApplicationDetails",back_populates="batch")
     task = relationship("Task",back_populates="batch")
     course_material = relationship("CourseMaterial",back_populates="batch")
+    work_report = relationship("WorkReport",back_populates="batch")
     

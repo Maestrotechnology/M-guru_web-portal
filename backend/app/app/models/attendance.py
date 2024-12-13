@@ -24,7 +24,7 @@ class Attendance(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     user_id = Column(Integer,ForeignKey("user.id"))
-    work_status= Column(TINYINT, comment="1-> chek_in 2 -> check_out")
+    checkIn_status= Column(TINYINT, comment="1-> chek_in 2 -> check_out")
     users = relationship("User",back_populates="attendance")
     work_history = relationship("WorkHistory",back_populates="attendance")
 

@@ -16,7 +16,7 @@ class User(Base):
     address = Column(Text)
     create_at = Column(DateTime)
     update_at = Column(DateTime)
-    status = Column(TINYINT,comment = "1->active,2->inactive,0->delete")
+    status = Column(TINYINT,comment = "1->active,2->inactive,-1->delete")
     reset_key=Column(String(255))
     otp = Column(String(10))
     otp_expire_at = Column(DateTime)
@@ -39,5 +39,6 @@ class User(Base):
     task_details = relationship("TaskDetail",foreign_keys="[TaskDetail.trainer_id]",back_populates="users")
 
     api_tokens=relationship("ApiTokens",back_populates="user")
-
+    work_report=relationship("WorkReport",back_populates="user")
+    
 

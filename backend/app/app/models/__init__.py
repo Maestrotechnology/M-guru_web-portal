@@ -15,5 +15,6 @@ from .task_details import TaskDetail
 from .score import Score
 from .student_project_details import StudentProjectDetail
 from .passoutyear import PassoutYear
+from .work_report import WorkReport
 
 

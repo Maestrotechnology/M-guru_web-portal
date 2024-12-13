@@ -71,7 +71,10 @@ async def checK_in(
                 in_longitude=longitude,
                 created_at=datetime.now(settings.tz_IN),
                 status=1,
-                user_id=user.id
+                user_id=user.id,
+                checkIn_status=1
+
+
             )
             db.add(addAttendance)
             db.commit()
@@ -85,6 +88,7 @@ async def checK_in(
             get_Attendance.out_latitude=latitude
             get_Attendance.out_longitude=longitude
             get_Attendance.check_out=datetime.now(settings.tz_IN)
+            get_Attendance.checkIn_status=2
             db.commit()
             return {"status":1,"msg":"check out sucessfully"}
     
@@ -209,6 +213,7 @@ async def list_attendance(
                     "msg":"Success",
                     "attendance_id": get_attendance.id if get_attendance else None,
                     "check_in":get_attendance.check_in if get_attendance else None,
+                    "checkIn_status":get_attendance.checkIn_status if get_attendance else None
                     }
             
         if check==2:
@@ -229,7 +234,9 @@ async def list_attendance(
                         "total_count":totalCount,
                         "items":data_list})
             return {"status":1,"msg":"Success","data":data}
-    
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
+
 
 @router.post("/complete_task")
 async def complete_task(
@@ -247,7 +254,9 @@ async def complete_task(
             return {"status":1,"msg":"task completed sucessfully"}
         else:
             return {"status":0,"msg":"Invalid TaskDetail Id"}
-        
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
+   
     
 @router.post("/list_trainer_rating")
 async def list_trainer_rating(
@@ -290,8 +299,10 @@ async def list_trainer_rating(
                     "total_count":totalCount,
                     "items":data_list})
         return {"status":1,"msg":"Success","data":data}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
 
-
+  
 @router.post("/check_out_automatically")
 async def list_trainer_rating(
                     db: Session = Depends(get_db),
@@ -307,3 +318,85 @@ async def list_trainer_rating(
         
         db.commit()
         return {"status":1,"msg":"Successfully updated"}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
+
+
+
+@router.post("/trainer_work")
+async def trainer_work(
+    *,
+    db: Session = Depends(deps.get_db),
+    token: str = Form(...),
+    time_taken:time=Form(...),
+    batch_id:int=Form(...),
+    taken_date:date=Form(...),
+    description:str=Form(None)
+):
+    user = deps.get_user_token(db=db, token=token)
+    if user:
+        if user.user_type!=2:
+            return {"status": 0, "msg": "You are not allowed to access"}
+        addWorkReport = WorkReport(
+                trainer_id=user.id,
+                date=taken_date,
+                description=description,
+                status=1,
+                taken_time=time_taken,
+                created_at=datetime.now(settings.tz_IN),
+                batch_id=batch_id
+                
+            )
+        db.add(addWorkReport)
+        db.commit()
+        return {"status":1,"msg":"Successfully created"}
+
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
+
+
+
+
+@router.post("/list_trainer_work")
+async def list_trainer_work(
+                    db: Session = Depends(get_db),
+                    token: str = Form(...),
+                    trainer_id:str=Form(None),
+                    from_date: datetime = Form(None),
+                    to_date: datetime = Form(None),
+                    page: int = 1,
+                    size: int = 10
+):
+    user = get_user_token(db,token=token)
+    if user:
+        get_WorkReport=db.query(WorkReport).filter(WorkReport.status==1).order_by(WorkReport.id.desc())
+        if user.user_type==1:
+            if trainer_id:
+                get_WorkReport = get_WorkReport.filter(WorkReport.trainer_id == trainer_id )
+        if user.user_type==2:
+                get_WorkReport = get_WorkReport.filter(WorkReport.trainer_id == user.id )
+        if from_date and to_date:
+            get_WorkReport = get_WorkReport.filter(WorkReport.date >= from_date ,TaskDetail.date <= to_date)      
+        totalCount= get_WorkReport.count()
+        total_page,offset,limit=get_pagination(totalCount,page,size)
+        get_WorkReport=get_WorkReport.limit(limit).offset(offset).all()
+
+        data_list = []
+        for data in get_WorkReport:
+            data_list.append({
+                "WorkReport_id":data.id,
+                "trainer_id":data.trainer_id,
+                "trainer_name":data.user.name.capitalize(),
+                "date":data.date,
+                "batch_id":data.batch_id,
+                "batch_name":data.batch.name,
+                "description":data.description,
+                "taken_time":data.taken_time,
+                "created_at":data.created_at
+            })
+        data=({"page":page,"size":size,"total_page":total_page,
+                    "total_count":totalCount,
+                    "items":data_list})
+        return {"status":1,"msg":"Success","data":data}
+    else:
+        return {'status':-1,"msg":"Your login session expires.Please login later."}
