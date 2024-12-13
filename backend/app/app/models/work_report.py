@@ -1,4 +1,4 @@
-from sqlalchemy import  Column, Integer, String, DateTime,ForeignKey,Text,DECIMAL
+from sqlalchemy import  Column, Integer, String, DateTime,ForeignKey,Text,DECIMAL,Time
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 from sqlalchemy.dialects.mysql import TINYINT
@@ -11,7 +11,7 @@ class WorkReport(Base):
     date=Column(DateTime)
     batch_id=Column(Integer,ForeignKey("batch.id"))
     description=Column(String(350))
-    taken_time=Column(DateTime)
+    taken_time=Column(Time)
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
