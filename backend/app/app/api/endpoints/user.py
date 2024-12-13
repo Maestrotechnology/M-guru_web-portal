@@ -88,7 +88,7 @@ async def updateUser(
     checkUser = db.query(User).filter(User.status==1)
 
     getUser = checkUser.filter(User.id == userId,User.status==1).first()
-    
+
     if getUser.user_type == 3 and not course_id:
         return {"status":0, "msg": "course is required"}
         
@@ -186,7 +186,8 @@ async def list_user(
 @router.post("/delete_user")
 async def deleteUser(db:Session=Depends(get_db),
                      token:str=Form(...),
-                     userId:int=Form(...)):
+                     userId:int=Form(...)
+):
     
     user  = get_user_token(db,token=token)
 

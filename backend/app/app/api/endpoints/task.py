@@ -216,7 +216,7 @@ async def listTaskScore(
     if username:
         get_score = get_score.filter(User.username.ilike(f"%{username}%"))
 
-    get_score = get_score.order_by(Task.name)
+    get_score = get_score.order_by(Score.id.desc())
     totalCount= get_score.count()
     total_page,offset,limit=get_pagination(totalCount,page,size)
     get_score=get_score.limit(limit).offset(offset).all()
