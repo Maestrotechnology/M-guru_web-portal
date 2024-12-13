@@ -11,7 +11,7 @@ from .endpoints import (login,
                         checkin,
                         task,
                         score,
-                        student_project_details
+                        student_project_details,
                         )
 
 api_router = APIRouter()
