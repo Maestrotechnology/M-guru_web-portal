@@ -387,7 +387,7 @@ async def list_trainer_work(
                 "WorkReport_id":data.id,
                 "trainer_id":data.trainer_id,
                 "trainer_name":data.user.name.capitalize(),
-                "date":data.date,
+                "date":data.date.date(),
                 "batch_id":data.batch_id,
                 "batch_name":data.batch.name,
                 "description":data.description,
