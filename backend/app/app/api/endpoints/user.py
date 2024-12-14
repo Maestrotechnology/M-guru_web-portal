@@ -25,8 +25,7 @@ async def createUser(db:Session=Depends(get_db),
                      batch_id:int=Form(None)
                      
 ):
-    if user_type==3 and batch_id==None:
-        return {"status":0,"msg":"Batch is required to create Student"}
+
         
     hashPassword = get_password_hash(password)
     
