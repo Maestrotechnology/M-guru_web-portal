@@ -24,4 +24,5 @@ class Batch(Base):
     task = relationship("Task",back_populates="batch")
     course_material = relationship("CourseMaterial",back_populates="batch")
     work_report = relationship("WorkReport",back_populates="batch")
+    assigned_exams = relationship("AssignExam",back_populates="batch")
     

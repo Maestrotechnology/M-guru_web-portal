@@ -21,4 +21,5 @@ class Course(Base):
     users = relationship("User",back_populates="course")
     materials = relationship("CourseMaterial",back_populates="course")
     task = relationship("Task", back_populates="course")
+    assigned = relationship("AssignExam", back_populates="course")
 

@@ -40,5 +40,6 @@ class User(Base):
 
     api_tokens=relationship("ApiTokens",back_populates="user")
     work_report=relationship("WorkReport",back_populates="user")
+    assigned_exams=relationship("AssignExam",back_populates="student")
     
 
