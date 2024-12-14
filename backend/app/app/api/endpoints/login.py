@@ -57,8 +57,8 @@ async def login(*,db: Session = Depends(deps.get_db),
         userId = user.id
         get_batch=db.query(Batch).join(User,Batch.id==User.batch_id).filter(User.id==userId).first()
         if get_batch:
-            # if get_batch.status!=1:
-            #     return {"status":0,"msg":"Your login session expires."}
+            if get_batch.status!=1:
+                return {"status":0,"msg":"Your login session expires."}
             if today >get_batch.end_date:
                 return {"status":0,"msg":"Your login session expires."}
 
@@ -100,21 +100,21 @@ async def login(*,db: Session = Depends(deps.get_db),
 
             db.add(addToken)
             db.commit()
-        #     checkTodayCheckIN = (
-        #     db.query(Attendance)
-        #     .filter(
-        #         Attendance.user_id == user.id,
-        #         cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
-        #     )
-        #     .first()
-        # )
+            checkTodayCheckIN = (
+            db.query(Attendance)
+            .filter(
+                Attendance.user_id == user.id,
+                cast(Attendance.check_in, Date) == datetime.now(settings.tz_IN).date(),
+            )
+            .first()
+        )
             return {'status':1,
                 'token': key,
                 "user_id":user.id,
                 "user_type":user.user_type,
                 'msg': 'Successfully LoggedIn.',  
                 'status': 1,
-                # "checkin_time":checkTodayCheckIN.check_in if checkTodayCheckIN else None
+                "checkin_time":checkTodayCheckIN.check_in if checkTodayCheckIN else None
                 }
 
         

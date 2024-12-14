@@ -11,7 +11,8 @@ from .endpoints import (login,
                         checkin,
                         task,
                         score,
-                        student_project_details
+                        student_project_details,
+                        dashboard
                         )
 
 api_router = APIRouter()
@@ -28,5 +29,6 @@ api_router.include_router(checkin.router,tags=["Checkin"])
 api_router.include_router(task.router,tags=["Task"])
 api_router.include_router(score.router,tags=["Score"])
 api_router.include_router(student_project_details.router,tags=["Student Project details"])
+api_router.include_router(dashboard.router,tags=["Dashboard"])
 
 

@@ -304,7 +304,7 @@ async def list_trainer_rating(
 
   
 @router.post("/check_out_automatically")
-async def list_trainer_rating(
+async def check_out_automatically(
                     db: Session = Depends(get_db),
                     token: str = Form(...),
 ):
