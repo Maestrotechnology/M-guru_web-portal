@@ -24,4 +24,4 @@ class Question(Base):
     type_of = relationship("TypeOfQuestion",back_populates="questions")
     set = relationship("Set", back_populates="questions")
     exam = relationship("Exam", back_populates="questions")
-    options = relationship("Options", back_populates="question")
+    options = relationship("Option", back_populates="question")
