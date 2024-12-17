@@ -45,7 +45,7 @@ async def today_checkIn(
     
 
 
-@router.post("/aa")
+@router.post("/get_student_count")
 async def aa(
                 db:Session=Depends(get_db),
                 # token:str=Form(...)

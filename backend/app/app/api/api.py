@@ -12,7 +12,10 @@ from .endpoints import (login,
                         task,
                         score,
                         student_project_details,
-                        dashboard
+                        dashboard,
+                        question,
+                        exam,
+                        set
                         )
 
 api_router = APIRouter()
@@ -30,5 +33,8 @@ api_router.include_router(task.router,tags=["Task"])
 api_router.include_router(score.router,tags=["Score"])
 api_router.include_router(student_project_details.router,tags=["Student Project details"])
 api_router.include_router(dashboard.router,tags=["Dashboard"])
+api_router.include_router(question.router, tags=["Question"])
+api_router.include_router(exam.router, tags=["Exam"])
+api_router.include_router(set.router, tags=["Set"])
 
 

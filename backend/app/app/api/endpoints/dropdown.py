@@ -121,3 +121,21 @@ async def dropdownYear(
             "name":data.name
         })
     return {"status":1,"msg":"Success","data":data_list}
+
+@router.post("/downQuestionType")
+async def questionType(
+                        db: Session = Depends(get_db),
+                        token: str = Form(...)
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+    get_question_type = db.query(TypeOfQuestion).filter(TypeOfQuestion.status == 1).all()
+    data_list = []
+    for data in get_question_type:
+        data_list.append({
+            "id":data.id,
+            "name":data.name.capitalize()
+        })
+    return {"status":1,"msg":"Success","data":data_list}
