@@ -225,9 +225,12 @@ async def Answer(base:GetAnswer,db:Session=Depends(get_db),
             answer_id=i["answer_id"]
             answer=i["answer"]
             print(question_id,type_id,answer_id,answer)
+            option = ""
+            for i in answer_id:
+                  option = option +","+str(i)
             add_answer=StudentExamDetail(
                   question_id=question_id,
-                  option_ids=answer_id,
+                  option_ids= option,
                   answer=answer,
                   type__id=type_id,
                   student_id=user.id,

@@ -3,18 +3,18 @@ from app.utils import *
 from app.api.deps import *
 import json
 from sqlalchemy import func
-from app.schemas import GetQuestions
+# from app.schemas import GetQuestions
 
 
 router = APIRouter()
 
-@router.post("/add_questions2")
-async def addquestion(*,
-                        db: Session = Depends(get_db),
-                        question: GetQuestions
-):
-     print(question.token)
-     print(question.questions)
+# @router.post("/add_questions2")
+# async def addquestion(*,
+#                         db: Session = Depends(get_db),
+#                         question: GetQuestions
+# ):
+#      print(question.token)
+#      print(question.questions)
      
 
 @router.post("/add_question")
@@ -197,6 +197,7 @@ async def listQuestions(
                     "question_title": question.question_title,
                     "options": get_option,
                     "answers": get_answer if user.user_type in [1,2] else None,
+                    "fill_in_the_blank_answer": question.answer if question.answer else None,
                     "mark": question.mark,
                     "type_id": question.question_type_id,
                     "type": question.type_of.name,
