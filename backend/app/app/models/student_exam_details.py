@@ -14,6 +14,7 @@ class StudentExamDetail(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
 
+    type__id = Column(Integer, ForeignKey("type_of_question.id"), index=True)
     assign_exam_id = Column(Integer, ForeignKey("assign_exam.id"),index=True)
     student_id = Column(Integer, ForeignKey("user.id"), index=True)
     question_id = Column(Integer, ForeignKey("question.id"), index=True)
@@ -21,4 +22,5 @@ class StudentExamDetail(Base):
     assigned = relationship("AssignExam", back_populates="exam_details")
     student = relationship("User", back_populates="exam_details")
     question = relationship("Question", back_populates="exam_details")
+    type_of = relationship("TypeOfQuestion", back_populates="exam_details")
     

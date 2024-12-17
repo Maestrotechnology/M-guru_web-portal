@@ -15,3 +15,4 @@ class TypeOfQuestion(Base):
 
     # relationship
     questions = relationship("Question", back_populates="type_of")
+    exam_details = relationship("StudentExamDetail", back_populates="type_of")

@@ -44,7 +44,8 @@ async def addQuestions(
             status = 1,
             no_of_answers = 1,
             created_at = datetime.now(settings.tz_IN),
-            updated_at = datetime.now(settings.tz_IN)
+            updated_at = datetime.now(settings.tz_IN),
+            answer = answers if question_type_id == 2 else None
         )
         db.add(create_question)
         db.commit()
@@ -82,16 +83,16 @@ async def addQuestions(
                             updated_at = datetime.now(settings.tz_IN)
                         )
                     db.add(create_option)
-            if question_type_id == 2:
-                    create_option = Option(
-                            name = answers,
-                            answer_status = 1,
-                            question_id = create_question.id,
-                            status = 1,
-                            created_at = datetime.now(settings.tz_IN),
-                            updated_at = datetime.now(settings.tz_IN)
-                        )
-                    db.add(create_option)
+            # if question_type_id == 2:
+            #         create_option = Option(
+            #                 name = answers,
+            #                 answer_status = 1,
+            #                 question_id = create_question.id,
+            #                 status = 1,
+            #                 created_at = datetime.now(settings.tz_IN),
+            #                 updated_at = datetime.now(settings.tz_IN)
+            #             )
+            #         db.add(create_option)
             if question_type_id == 3:
                     for answer in get_answers:
                     # print(answer.get("name"))
@@ -143,7 +144,9 @@ async def listQuestions(
         if type_id:
              get_questions = get_questions.filter(Question.question_type_id == type_id)
         
-        
+        get_question_ids = []
+        for question in get_questions:
+             get_question_ids.append(question.id)
         get_questions = get_questions.order_by(Question.id)
         totalCount= get_questions.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
@@ -192,7 +195,7 @@ async def listQuestions(
                 
                 })
         data=({"page":page,"size":size,"total_page":total_page,
-                    "total_count":totalCount,"total_mark":totalMarkForParticularPaper,
+                    "total_count":totalCount,"total_mark":totalMarkForParticularPaper,"question_ids": get_question_ids,
                     "items":dataList,})
         return {"status":1,"msg":"Success","data":data}
 
