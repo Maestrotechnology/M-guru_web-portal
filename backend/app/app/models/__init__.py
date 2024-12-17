@@ -23,5 +23,6 @@ from .type_of_question import TypeOfQuestion
 from .options import Option
 from .questions import Question
 from .student_exam_details import StudentExamDetail
+from .exam_information import ExamInformarion
 
 

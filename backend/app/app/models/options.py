@@ -19,3 +19,4 @@ class Option(Base):
 
     # relationship
     question = relationship("Question", back_populates="options")
+    exam_informarion = relationship("ExamInformarion", back_populates="option")

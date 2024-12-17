@@ -23,4 +23,5 @@ class StudentExamDetail(Base):
     student = relationship("User", back_populates="exam_details")
     question = relationship("Question", back_populates="exam_details")
     type_of = relationship("TypeOfQuestion", back_populates="exam_details")
+    exam_informarion = relationship("ExamInformarion", back_populates="exam_details")
     

@@ -219,28 +219,51 @@ async def Answer(base:GetAnswer,db:Session=Depends(get_db),
          return {"status":0,"msg":"Your login session expires.Please login again."}
     
 #     if user.userType==1 or 2:
-      for i in base["question_information"]:
-            question_id=i["question_id"]
-            type_id=i["type_id"]
-            answer_id=i["answer_id"]
-            answer=i["answer"]
+      for row in base["question_information"]:
+            question_id=row["question_id"]
+            type_id=row["type_id"]
+            answer_id=row["answer_id"]
+            answer=row["answer"]
             print(question_id,type_id,answer_id,answer)
-            option = ""
-            for i in answer_id:
-                  option = option +","+str(i)
-            add_answer=StudentExamDetail(
+           
+            add_new=StudentExamDetail(
                   question_id=question_id,
-                  option_ids= option,
+                  
                   answer=answer,
                   type__id=type_id,
                   student_id=user.id,
                   assign_exam_id=assign_exam_id,
                   status=1,
                   created_at=datetime.now())
-            db.add(add_answer)
+            db.add(add_new)
             db.commit()
+            print(answer_id,11111111)
+            for answer in answer_id:
+                  print(answer,333333)
+                  add_ExamInformarion=ExamInformarion(
+                        StudentExamDetail_id=add_new.id,
+                        answer_id=answer,
+                        status=1,
+                        created_at=datetime.now()
+                  )
+                  db.add(add_ExamInformarion)
+                  db.commit()
+      return {"status":1,"msg":"Success"}
 
-         
 
-
-     
+# @router.post("/exam_result")
+# async def exam_result(
+#                               db: Session = Depends(get_db),
+#                               token: str = Form(...),
+#                               # ba  
+#                               user_id: int = Form(...),
+#                               exam_id: int = Form(...)
+# ):
+#       user = get_user_token(db=db,token=token)
+#       if not user:
+#             return {"status":0,"msg":"Your login session expires.Please login again."}
+#       getdata=db.query(StudentExamDetail,ExamInformarion,Option)\
+#             .join(StudentExamDetail,StudentExamDetail.id==ExamInformarion.StudentExamDetail_id)\
+#             .join(Option,Option.id==ExamInformarion.answer_id)\
+#             .filter(StudentExamDetail.student_id==1).all()
+      
