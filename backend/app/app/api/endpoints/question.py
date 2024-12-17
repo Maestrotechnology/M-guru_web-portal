@@ -3,9 +3,19 @@ from app.utils import *
 from app.api.deps import *
 import json
 from sqlalchemy import func
+from app.schemas import GetQuestions
 
 
 router = APIRouter()
+
+@router.post("/add_questions2")
+async def addquestion(*,
+                        db: Session = Depends(get_db),
+                        question: GetQuestions
+):
+     print(question.token)
+     print(question.questions)
+     
 
 @router.post("/add_question")
 async def addQuestions(

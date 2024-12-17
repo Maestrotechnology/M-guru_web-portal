@@ -31,7 +31,7 @@ async def createSet(
         )
         db.add(create_set)
         db.commit()
-        return {"status":0, "msg":"set created successfully"}
+        return {"status":1, "msg":"set created successfully"}
 
 @router.post("/list_set")
 async def listSet(
