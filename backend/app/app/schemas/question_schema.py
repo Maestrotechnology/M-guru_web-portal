@@ -1,25 +1,13 @@
 from pydantic import BaseModel
-
+from typing import List, Optional
 class Question(BaseModel):
     question_id: int
     type_id: int
     answer_id: list[int] | None = None
-    answer: str | None = None
+    answer:  Optional[str] = None
 
 class GetAnswer(BaseModel):
-    question_information: list[Question]
-    token: str
-
-class AddQuestion(BaseModel):
-    question_title: str
-    question_type_id: int
-    mark: int
-    exam_id: int
-    set_id: int
-    options: list[str] | None = None
-    answer: list[str] | None = None
-
-class GetQuestions(BaseModel):
-    token: str 
-    questions: list[AddQuestion]  
-    
+    question_information:list[Question]
+    assign_exam_id:int 
+    token:str
+ 
