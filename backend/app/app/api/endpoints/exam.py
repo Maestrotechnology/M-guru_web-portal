@@ -206,11 +206,12 @@ async def listStudentExam(
 
 
 
-@router.post("/multiple_ticket_assigned")
-async def multiple_ticket_assigned(base:GetAnswer,db:Session=Depends(get_db),
+@router.post("/Answer")
+async def Answer(base:GetAnswer,db:Session=Depends(get_db),
                     ):
       base=jsonable_encoder(base)
       token=base["token"]
+      assign_exam_id=base["assign_exam_id"]
       user=get_user_token(db=db,token=token)
    
 #     
@@ -224,6 +225,18 @@ async def multiple_ticket_assigned(base:GetAnswer,db:Session=Depends(get_db),
             answer_id=i["answer_id"]
             answer=i["answer"]
             print(question_id,type_id,answer_id,answer)
+            add_answer=StudentExamDetail(
+                  question_id=question_id,
+                  option_ids=answer_id,
+                  answer=answer,
+                  type__id=type_id,
+                  student_id=user.id,
+                  assign_exam_id=assign_exam_id,
+                  status=1,
+                  created_at=datetime.now())
+            db.add(add_answer)
+            db.commit()
+
          
 
 
