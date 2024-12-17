@@ -218,38 +218,71 @@ async def Answer(base:GetAnswer,db:Session=Depends(get_db),
       base=jsonable_encoder(base)
       token=base["token"]
       assign_exam_id=base["assign_exam_id"]
+      get_assigned = db.query(AssignExam).filter(AssignExam.id == assign_exam_id).first()
+      if not get_assigned:
+            return{"status":0, "msg":"Invaild assigned id"}
       user=get_user_token(db=db,token=token)
-   
+      print(base)
 #     
       if not user:
          return {"status":0,"msg":"Your login session expires.Please login again."}
-    
+      # return "s"
 #     if user.userType==1 or 2:
-      for i in base["question_information"]:
-            question_id=i["question_id"]
-            type_id=i["type_id"]
-            answer_id=i["answer_id"]
-            answer=i["answer"]
-            print(question_id,type_id,answer_id,answer)
+      for row in base["question_information"]:
+            question_id=row["question_id"]
+            type_id=row["type_id"]
+            answer_id=row["answer_id"]
+            answer=row["answer"]
+            # print(question_id,type_id,answer_id,answer)
             option = ""
+
             for i in answer_id:
                   if option == "":
-                        option = i
+                        option = str(i)
                   else:
-                        option = option +","+str(i)
-            add_answer=StudentExamDetail(
+                        option = option + "," + str(i)
+
+            get_options = db.query(Option).filter(Option.question_id == question_id,Option.answer_status == 1).all()
+            get_question_mark = db.query(Question).filter(Question.id == question_id).first()
+            get_question_mark = get_question_mark.mark
+            get_option_ids = [option.id for option in get_options]
+            # print("id",get_option_ids)
+            # print("option", option)
+            print(answer_id)
+            print(get_option_ids)
+            mark_status = None
+            if answer_id == get_option_ids:
+                  mark_status = get_question_mark
+
+            add_new=StudentExamDetail(
                   question_id=question_id,
-                  option_ids= option,
+                  option_ids = option,
                   answer=answer,
                   type__id=type_id,
                   student_id=user.id,
                   assign_exam_id=assign_exam_id,
                   status=1,
-                  created_at=datetime.now())
-            db.add(add_answer)
+                  created_at=datetime.now(),
+                  mark=mark_status
+                  )
+            db.add(add_new)
             db.commit()
+      return {"status":1,"msg":"Success"}
 
-         
 
-
-     
+# @router.post("/exam_result")
+# async def exam_result(
+#                               db: Session = Depends(get_db),
+#                               token: str = Form(...),
+#                               # ba  
+#                               user_id: int = Form(...),
+#                               exam_id: int = Form(...)
+# ):
+#       user = get_user_token(db=db,token=token)
+#       if not user:
+#             return {"status":0,"msg":"Your login session expires.Please login again."}
+#       getdata=db.query(StudentExamDetail,ExamInformarion,Option)\
+#             .join(StudentExamDetail,StudentExamDetail.id==ExamInformarion.StudentExamDetail_id)\
+#             .join(Option,Option.id==ExamInformarion.answer_id)\
+#             .filter(StudentExamDetail.student_id==1).all()
+      
