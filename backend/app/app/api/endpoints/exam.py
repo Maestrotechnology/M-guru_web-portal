@@ -6,6 +6,9 @@ from datetime import datetime
 from app.core.config import settings
 from app.utils import *
 import random
+from app.schemas import GetAnswer
+from fastapi.encoders import jsonable_encoder
+
 
 router = APIRouter()
 
@@ -202,6 +205,26 @@ async def listStudentExam(
       return {"status":1,"msg":"Success","data":data}
 
 
+
+@router.post("/multiple_ticket_assigned")
+async def multiple_ticket_assigned(base:GetAnswer,db:Session=Depends(get_db),
+                    ):
+      base=jsonable_encoder(base)
+      token=base["token"]
+      user=get_user_token(db=db,token=token)
+   
+#     
+      if not user:
+         return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+#     if user.userType==1 or 2:
+      for i in base["question_information"]:
+            question_id=i["question_id"]
+            type_id=i["type_id"]
+            answer_id=i["answer_id"]
+            answer=i["answer"]
+            print(question_id,type_id,answer_id,answer)
+         
 
 
      

@@ -10,6 +10,7 @@ class Question(Base):
     question_title = Column(String(255))
     mark = Column(Integer)
     no_of_answers = Column(TINYINT)
+    answer = Column(String(250))
 
     status = Column(TINYINT, comment="1-> active , 2-> inactive")
     created_at = Column(DateTime)
@@ -25,3 +26,4 @@ class Question(Base):
     set = relationship("Set", back_populates="questions")
     exam = relationship("Exam", back_populates="questions")
     options = relationship("Option", back_populates="question")
+    exam_details = relationship("StudentExamDetail", back_populates="question")

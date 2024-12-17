@@ -156,13 +156,22 @@ async def listQuestions(
                 get_answer = []
                 if question.options:
                      for option in question.options:
-                          if option.status ==1:# and option.answer_status	!=1:
-                              get_option.append(
-                                   {
-                                   "option_id":option.id,
-                                   "option":option.name
-                                   }
-                                   )
+                          if user.user_type == 3:
+                            if option.status ==1:# and option.answer_status	!=1:
+                                get_option.append(
+                                    {
+                                    "option_id":option.id,
+                                    "option":option.name
+                                    }
+                                    )
+                          else:
+                            if option.status ==1 and option.answer_status	!=1:
+                                get_option.append(
+                                    {
+                                    "option_id":option.id,
+                                    "option":option.name
+                                    }
+                                    )
                           if option.status == 1 and option.answer_status==1:
                                get_answer.append(
                                    {

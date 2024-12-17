@@ -25,4 +25,5 @@ class AssignExam(Base):
     set = relationship("Set", back_populates="assigned")
     course = relationship("Course", back_populates="assigned")
     student = relationship("User", back_populates="assigned_exams")
+    exam_details = relationship("StudentExamDetail", back_populates="assigned")
 

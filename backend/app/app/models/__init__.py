@@ -22,5 +22,6 @@ from .set import Set
 from .type_of_question import TypeOfQuestion
 from .options import Option
 from .questions import Question
+from .student_exam_details import StudentExamDetail
 
 
