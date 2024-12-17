@@ -64,6 +64,7 @@ async def listExam(
                     "exam_id" :row.id,
                     "exam_name":row.name.capitalize(),
                     "created_at":row.created_at,
+                    "no_of_set":len(row.sets)
                 
                 })
         data=({"page":page,"size":size,"total_page":total_page,
@@ -170,7 +171,7 @@ async def assignExam(
               )
               db.add(assign)
         db.commit()
-        return {"status": 1, "status": "Exam assigned successfully"}
+        return {"status": 1, "msg": "Exam assigned successfully"}
 
 @router.post("/list_student_exam")
 async def listStudentExam(
@@ -183,20 +184,25 @@ async def listStudentExam(
       user = get_user_token(db=db,token=token)
       if not user:
             return {"status":0,"msg":"Your login session expires.Please login again."}
-      
-      get_assigned = db.query(AssignExam).filter(AssignExam.student_id == user.id).order_by(AssignExam.id)
-      totalCount= get_assigned.count()
+      get_assigned_details = db.query(AssignExam).filter(AssignExam.status == 1)
+      # if user.user_type in [1,2]:
+      #       get_assigned_details = get_assigned_details
+      if user.user_type == 3:
+            get_assigned_details = get_assigned_details.filter(AssignExam.student_id == user.id).order_by(AssignExam.id)
+      totalCount= get_assigned_details.count()
       total_page,offset,limit=get_pagination(totalCount,page,size)
-      get_assigned=get_assigned.limit(limit).offset(offset).all()
+      get_assigned_details=get_assigned_details.limit(limit).offset(offset).all()
       dataList =[]
 
-      for data in get_assigned:
+      for data in get_assigned_details:
             dataList.append({
                   "user_id": user.id,
                   "exam_id": data.exam_id,
                   "exam_name": data.exam.name,
                   "set_id": data.set_id,
-                  "set_name": data.set.name
+                  "set_name": data.set.name,
+                  "created_at": data.created_at,
+                  "assigned_id": data.id
                   # ""
             })
       data=({"page":page,"size":size,"total_page":total_page,
@@ -227,7 +233,10 @@ async def Answer(base:GetAnswer,db:Session=Depends(get_db),
             print(question_id,type_id,answer_id,answer)
             option = ""
             for i in answer_id:
-                  option = option +","+str(i)
+                  if option == "":
+                        option = i
+                  else:
+                        option = option +","+str(i)
             add_answer=StudentExamDetail(
                   question_id=question_id,
                   option_ids= option,

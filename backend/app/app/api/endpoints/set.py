@@ -68,9 +68,52 @@ async def listSet(
                     "set_name":row.name.capitalize(),
                     "exam_id":row.exam_id,
                     "created_at":row.created_at,
-                
+                    "no_of_questions":len(row.questions) if row.questions else None,
+                    "total": sum(question.mark for question in row.questions) if row.questions else None
                 })
         data=({"page":page,"size":size,"total_page":total_page,
                     "total_count":totalCount,
                     "items":dataList})
         return {"status":1,"msg":"Success","data":data}
+
+@router.post("/update_set")
+async def updateSet(
+                        db: Session = Depends(get_db),
+                        token: str = Form(...),
+                        set_name: str = Form(...),
+                        set_id: int = Form(...)
+):
+      user = get_user_token(db=db,token=token)
+      if not user:
+          return {"status":0,"msg":"Your login session expires.Please login again."}
+      if user.user_type not in [1,2]:
+              return {"status":0, "msg":"Access denied"}
+      
+      get_set = db.query(Set).filter(Set.id == set_id, Set.status == 1).first()
+      if not get_set:
+            return {"status":0, "msg":"Invaild set"}
+      
+      get_set.name = set_name
+      db.commit()
+      return {"status": 1, "msg":"Set successfully updated"}
+
+@router.post("/delete_update")
+async def deleteUpdate(
+                        db: Session = Depends(get_db),
+                        token: str = Form(...),
+                        set_id: int = Form(...)
+):
+      user = get_user_token(db=db,token=token)
+      if not user:
+          return {"status":0,"msg":"Your login session expires.Please login again."}
+      if user.user_type not in [1,2]:
+              return {"status":0, "msg":"Access denied"}
+      
+      get_set = db.query(Set).filter(Set.id == set_id, Set.status == 1).first()
+      if not get_set:
+            return {"status":0, "msg":"Invaild set"}
+      
+      get_set.status = -1
+      db.commit()
+      return {"status":1, "msg": "Set Successfully deleted"}
+      
