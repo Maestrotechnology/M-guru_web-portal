@@ -32,6 +32,12 @@ async def addQuestions(
 ):
         print(options)
         print(answers)
+        user=get_user_token(db=db,token=token)
+        if not user:
+            return {"status":0,"msg":"Your login session expires.Please login again."}
+        if user.user_type not in [1,2]:
+             return {"status":0, "msg":"Access denied"}
+        
         get_exam = db.query(Exam).filter(Exam.status==1,Exam.id==exam_id).first()
         if not get_exam:
             return {"status":0, "msg":"Invaild exam"}
@@ -197,7 +203,7 @@ async def listQuestions(
                     "question_title": question.question_title,
                     "options": get_option,
                     "answers": get_answer if user.user_type in [1,2] else None,
-                    "fill_in_the_blank_answer": question.answer if question.answer else None,
+                    "fill_in_the_blank_answer": question.answer if question.answer and user.user_type in [1,2] else None,
                     "mark": question.mark,
                     "type_id": question.question_type_id,
                     "type": question.type_of.name,
@@ -219,6 +225,12 @@ async def updateQuestion(
                             options: str = Form(None, description="option1,option2,option3"),
                             answers: str = Form(None, description="answer1,answer2,answer3"),
 ):
+        user=get_user_token(db=db,token=token)
+        if not user:
+            return {"status":0,"msg":"Your login session expires.Please login again."}
+        if user.user_type not in [1,2]:
+             return {"status":0, "msg":"Access denied"}
+        
         get_question = db.query(Question).filter(Question.id == question_id, Question.status == 1).first()
         if not get_question:
              return {"status":0, "msg": "Question not found"}
@@ -256,13 +268,39 @@ async def deleteOptionAndAnswer(
                                     db: Session = Depends(get_db),
                                     token: str = Form(...),
                                     id: int = Form(...)
-): 
+):
+        user=get_user_token(db=db,token=token)
+        if not user:
+            return {"status":0,"msg":"Your login session expires.Please login again."}
+        if user.user_type not in [1,2]:
+             return {"status":0, "msg":"Access denied"}
+         
         get_option = db.query(Option).filter(Option.id == id , Option.status == 1).first()
         if not get_option:
              return {"status": 0, "msg":"Option not found"}
         get_option.status = -1
         db.commit()
         return {"status":1, "msg":"Deleted successfully"}
+
+@router.post("/delete_question")
+async def deleteQuestion(
+                            db: Session = Depends(get_db),
+                            token: str = Form(...),
+                            question_id: int = Form(...)
+):
+        user=get_user_token(db=db,token=token)
+        if not user:
+            return {"status":0,"msg":"Your login session expires.Please login again."}
+        if user.user_type not in [1,2]:
+            return {"status":0, "msg":"Access denied"}
+        
+        get_question = db.query(Question).filter(Question.id == question_id, Question.status == 1).first()
+        if not get_question:
+            return {"status":0, "msg":"Question not found"}
+        
+        get_question.status = -1
+        db.commit()
+        return {"status":1, "msg":"question deleted successfully"}
 
 
 

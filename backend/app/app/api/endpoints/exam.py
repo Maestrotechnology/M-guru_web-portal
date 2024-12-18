@@ -177,14 +177,21 @@ async def assignExam(
 async def listStudentExam(
                               db: Session = Depends(get_db),
                               token: str = Form(...),
-                              # ba  
+                              # batch_id: int = Form(None),
+                              student_id: int = Form(None),
+                              exam_id: int = Form(None),
+                              course_id: int = Form(None), 
                               page: int = 1,
                               size: int = 50
 ):
       user = get_user_token(db=db,token=token)
       if not user:
             return {"status":0,"msg":"Your login session expires.Please login again."}
-      get_assigned_details = db.query(AssignExam).filter(AssignExam.status == 1)
+      
+      batch = db.query(Batch).filter(Batch.status==1).first()
+      if not batch:
+            return {"status":0,"msg":"None of the batches are active"}
+      get_assigned_details = db.query(AssignExam).filter(AssignExam.status == 1, AssignExam.batch_id == batch.id)
       # if user.user_type in [1,2]:
       #       get_assigned_details = get_assigned_details
       if user.user_type == 3:
@@ -195,13 +202,30 @@ async def listStudentExam(
                   AssignExam.student_id == user.id,
                   StudentExamDetail.assign_exam_id == None
                   )
-            
+      # if batch_id:
+      if student_id:
+            get_assigned_details = get_assigned_details.filter(
+                  AssignExam.student_id == student_id
+            )
+      if exam_id:
+            get_assigned_details = get_assigned_details.filter(
+                  AssignExam.exam_id == exam_id
+            )
+      if course_id:
+            get_assigned_details = get_assigned_details.filter(
+                  AssignExam.course_id == course_id
+            )
+
       totalCount= get_assigned_details.count()
       total_page,offset,limit=get_pagination(totalCount,page,size)
       get_assigned_details=get_assigned_details.order_by(AssignExam.id).limit(limit).offset(offset).all()
       dataList =[]
 
       for data in get_assigned_details:
+            total_mark = (
+        sum(detail.mark for detail in data.exam_details if detail.mark is not None)
+        if data.exam_details else None
+    )
             dataList.append({
                   "user_id": user.id,
                   "exam_id": data.exam_id,
@@ -211,8 +235,10 @@ async def listStudentExam(
                   "created_at": data.created_at,
                   "assigned_id": data.id,
                   "student_id": data.student_id,
-                  "student_name": data.student.name
-                  # ""
+                  "student_name": data.student.name,
+                  "student_user_name": data.student.username,
+                  "total_mark": total_mark
+ 
             })
       data=({"page":page,"size":size,"total_page":total_page,
                     "total_count":totalCount,
@@ -221,7 +247,7 @@ async def listStudentExam(
 
 
 
-@router.post("/Answer")
+@router.post("/answer")
 async def answer(
                   base:GetAnswer,
                   db:Session=Depends(get_db),
@@ -300,6 +326,8 @@ async def getStudentExamDetails(
       user=get_user_token(db=db,token=token)
       if not user:
          return {"status":0,"msg":"Your login session expires.Please login again."}
+      if user.user_type not in [1,2]:
+              return {"status":0, "msg":"Access denied"}
       
       get_assigned_details = db.query(AssignExam).filter(AssignExam.id == assigned_id).first()
       if not get_assigned_details:
@@ -330,7 +358,8 @@ async def getStudentExamDetails(
                   "question": data.question.question_title,
                   "options": [title.name for title in get_options] if data.option_ids else None,
                   "answer": data.answer,
-                  "mark": data.mark,
+                  "actual_mark": data.mark,
+                  "question_mark": data.question.mark
             })
             if data.mark:
                   student_score+=data.mark
@@ -341,6 +370,30 @@ async def getStudentExamDetails(
                     "items":data_list})
       return {"status":1,"msg":"Success","data":data}
       # return {"status":0, "msg":data_list}
+
+@router.post("/edit_paragraph_mark")
+async def editParagraphMark(
+                              db: Session = Depends(get_db),
+                              token: str = Form(...),
+                              student_exam_detail_id: int = Form(...),
+                              mark: int = Form(...)
+):
+      user=get_user_token(db=db,token=token)
+      if not user:
+         return {"status":0,"msg":"Your login session expires.Please login again."}
+      if user.user_type not in [1,2]:
+            return {"status":0, "msg":"Access denied"}
+      
+      get_student_exam_detail = db.query(StudentExamDetail).filter(StudentExamDetail.id == student_exam_detail_id).first()
+      if not get_student_exam_detail:
+            return {"status":0 ,"msg":"Invaild student record"}
+      get_question_mark = get_student_exam_detail.question.mark
+      if mark > get_question_mark:
+            return {"status": 0, "msg":f"Maximum mark is {get_question_mark}"}
+      
+      get_student_exam_detail.mark = mark
+      db.commit()
+      return {"status":1, "msg":"Mark updeted successfully"}
             
 
 

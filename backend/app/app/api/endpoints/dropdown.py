@@ -139,3 +139,42 @@ async def questionType(
             "name":data.name.capitalize()
         })
     return {"status":1,"msg":"Success","data":data_list}
+
+@router.post("/dropdown_active_batch_student")
+async def dropdownActiveBatchStudent(
+                                        db: Session = Depends(get_db),
+                                        token: str = Form(...)
+):
+        user = get_user_token(db,token=token)
+        if not user:
+            return {"status":0,"msg":"Your login session expires.Please login again."}
+        
+        get_students = db.query(User).join(Batch,
+                          Batch.id == User.batch_id                   
+                        ).filter(User.user_type == 3, User.status == 1, Batch.status == 1).order_by(User.name).all()
+        data_list = []
+        for data in get_students:
+            data_list.append({
+                "id":data.id,
+                "name":data.name.capitalize()
+            })
+        return {"status":1,"msg":"Success","data":data_list}
+
+@router.post("/dropdown_exam")
+async def dropDownExam(
+                         db: Session = Depends(get_db),
+                         token: str = Form(...)
+):
+        user = get_user_token(db,token=token)
+        if not user:
+            return {"status":0,"msg":"Your login session expires.Please login again."}
+        
+        get_exam = db.query(Exam).filter(Exam.status == 1).all()
+        data_list = []
+        for data in get_exam:
+            data_list.append({
+                "id":data.id,
+                "name":data.name.capitalize()
+            })
+        return {"status":1,"msg":"Success","data":data_list}
+
