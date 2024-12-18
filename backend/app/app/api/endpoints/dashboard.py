@@ -62,17 +62,28 @@ async def get_student_count(
 
 
 @router.post("/application_count")
-async def application_count(db: Session = Depends(get_db)):
+async def application_count(db: Session = Depends(get_db),token:str=Form(...)):
+    user=get_user_token(db=db,token=token)
+    if  user.user_type in [1,2]:
+    
  
-    get_count = db.query(
-        ApplicationDetails.enquiry_id,  EnquiryType.name,
-        func.count(ApplicationDetails.enquiry_id).label("total") 
-    )\
-    .join(EnquiryType, EnquiryType.id == ApplicationDetails.enquiry_id).filter(EnquiryType.status==1,ApplicationDetails.status==1) .group_by(ApplicationDetails.enquiry_id) .all()
+        application = db.query(
+            ApplicationDetails.enquiry_id,  EnquiryType.name,
+            func.count(ApplicationDetails.enquiry_id).label("total") 
+        )\
+        .join(EnquiryType, EnquiryType.id == ApplicationDetails.enquiry_id).filter(EnquiryType.status==1,ApplicationDetails.status==1) .group_by(ApplicationDetails.enquiry_id) .all()
+        batch_count = db.query(
+            User.batch_id,  Batch.name,
+            func.count(User.batch_id).label("total") 
+        )\
+        .join(Batch, Batch.id == User.batch_id).filter(User.status==1,Batch.status==1) .group_by(User.batch_id) .all()
 
-    return get_count
+        return {"status":1,"msg":"Success","application_count":application,"batch_count":batch_count}
+    else:
+        return {"status":-1,"msg":"Your login session expires.Please login again."}
     
 
+   
 @router.post("/batch_count")
 async def batch_count(db: Session = Depends(get_db)):
  
