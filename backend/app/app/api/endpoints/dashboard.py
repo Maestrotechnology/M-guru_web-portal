@@ -11,7 +11,7 @@ from app.utils import *
 from sqlalchemy import or_
 from pydantic import EmailStr
 from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_validation,get_username,calculate_distance
-
+from sqlalchemy import func, case
 
 router = APIRouter()
 @router.post("/today_checkIn")
@@ -46,7 +46,7 @@ async def today_checkIn(
 
 
 @router.post("/get_student_count")
-async def aa(
+async def get_student_count(
                 db:Session=Depends(get_db),
                 # token:str=Form(...)
 ):
@@ -58,3 +58,30 @@ async def aa(
     print("no of students absent:",no_of_student_in_batch - no_student_present.count())
     print("no of student present:",no_student_present.count() )
  
+
+
+
+@router.post("/application_count")
+async def application_count(db: Session = Depends(get_db)):
+ 
+    get_count = db.query(
+        ApplicationDetails.enquiry_id,  EnquiryType.name,
+        func.count(ApplicationDetails.enquiry_id).label("total") 
+    )\
+    .join(EnquiryType, EnquiryType.id == ApplicationDetails.enquiry_id).filter(EnquiryType.status==1,ApplicationDetails.status==1) .group_by(ApplicationDetails.enquiry_id) .all()
+
+    return get_count
+    
+
+@router.post("/batch_count")
+async def batch_count(db: Session = Depends(get_db)):
+ 
+    get_count = db.query(
+        User.batch_id,  Batch.name,
+        func.count(User.batch_id).label("total") 
+    )\
+    .join(Batch, Batch.id == User.batch_id).filter(User.status==1,Batch.status==1) .group_by(User.batch_id) .all()
+
+    return get_count
+
+                       
