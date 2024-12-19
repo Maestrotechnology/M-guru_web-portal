@@ -89,7 +89,7 @@ async def listStudentProject(
 
     get_project_count = get_projects.count()
     totalPages,offset,limit = get_pagination(get_project_count,page,size)
-    get_projects = get_projects.order_by(StudentProjectDetail.id).limit(limit).offset(offset).all()
+    get_projects = get_projects.order_by(StudentProjectDetail.id.desc()).limit(limit).offset(offset).all()
 
     data_list = []
 
