@@ -55,9 +55,8 @@ async def get_student_count(
     no_of_student_in_batch = len(get_batch.users)
     print(today)
     no_student_present = db.query(Attendance).filter(cast(Attendance.check_in, Date )== today)
-    print("no of students absent:",no_of_student_in_batch - no_student_present.count())
-    print("no of student present:",no_student_present.count() )
- 
+    data={"no of students absent:",no_of_student_in_batch - no_student_present.count(),"no of student present:",no_student_present.count()}
+  
 
 
 
@@ -66,19 +65,38 @@ async def application_count(db: Session = Depends(get_db),token:str=Form(...)):
     user=get_user_token(db=db,token=token)
     if  user.user_type in [1,2]:
     
- 
+        #application count
         application = db.query(
-            ApplicationDetails.enquiry_id,  EnquiryType.name,
+            ApplicationDetails.enquiry_id.label("enquiry") ,  EnquiryType.name.label("name") ,
             func.count(ApplicationDetails.enquiry_id).label("total") 
         )\
         .join(EnquiryType, EnquiryType.id == ApplicationDetails.enquiry_id).filter(EnquiryType.status==1,ApplicationDetails.status==1) .group_by(ApplicationDetails.enquiry_id) .all()
+        application_data=[]
+        for enquiry,name,count in application:
+            application_data.append({"enquiry_id":enquiry,
+                         "enquiry_name":name,
+                         "total":count})
+        #batch count 
         batch_count = db.query(
             User.batch_id,  Batch.name,
             func.count(User.batch_id).label("total") 
         )\
         .join(Batch, Batch.id == User.batch_id).filter(User.status==1,Batch.status==1) .group_by(User.batch_id) .all()
+        batch_data=[]
+        for batch,name,count in batch_count:
+            batch_data.append({"batch_id":batch,
+                         "batch_name":name,
+                         "total":count})
+        
+        #today present absent
+        get_batch = db.query(Batch).filter(Batch.status == 1).first()
+        today = datetime.now().date()
+        no_of_student_in_batch = len(get_batch.users)
+        no_student_present = db.query(Attendance).filter(cast(Attendance.check_in, Date )== today)
+        absent=no_of_student_in_batch - no_student_present.count()
+        today_attendance={"no of students absent":absent,"no of student present":no_student_present.count()}
 
-        return {"status":1,"msg":"Success","application_count":application,"batch_count":batch_count}
+        return {"status":1,"msg":"Success","application_count":application_data,"batch_count":batch_data,"attendance":today_attendance}
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
     
