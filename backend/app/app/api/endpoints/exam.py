@@ -223,9 +223,12 @@ async def listStudentExam(
 
       for data in get_assigned_details:
             total_mark = (
-        sum(detail.mark for detail in data.exam_details if detail.mark is not None)
-        if data.exam_details else None
-    )
+                              sum(detail.mark for detail in data.exam_details if detail.mark is not None)
+                              if data.exam_details else None
+                          )
+            if data.set.questions:
+                  no_of_question = sum(1 for qus in data.set.questions if qus.status == 1)
+
             dataList.append({
                   "user_id": user.id,
                   "exam_id": data.exam_id,
@@ -238,7 +241,8 @@ async def listStudentExam(
                   "student_id": data.student_id,
                   "student_name": data.student.name,
                   "student_user_name": data.student.username,
-                  "total_mark": total_mark
+                  "total_mark": total_mark,
+                  "no_of_question": no_of_question
  
             })
       data=({"page":page,"size":size,"total_page":total_page,
@@ -268,11 +272,13 @@ async def answer(
             return {"status":0, "msg":"You already taken this test"}
 
       get_set = db.query(Set).filter(Set.id == get_assigned.set_id).first()
-      if len(get_set.questions) != len(base["question_information"]):
+      print(len(get_set.questions),len(base["question_information"]))
+
+      no_questions = sum(1 for ques in get_set.questions if ques.status==1)
+      if no_questions != len(base["question_information"]):
             return {"status":0 , "msg": "Please answer all questions"}
 
-      # if not base["question_information"]:
-      #       return {"nil"}
+
       for row in base["question_information"]:
             question_id=row["question_id"]
             type_id=row["type_id"]

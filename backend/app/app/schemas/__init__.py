@@ -1,1 +1,1 @@
-from .question_schema import QuestionDetail,GetAnswer#,AddQuestion,GetQuestions
+from .question_schema import QuestionDetail,GetAnswer,UpdateQuestion,GetQuestion

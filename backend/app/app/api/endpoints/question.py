@@ -12,7 +12,7 @@ router = APIRouter()
 @router.post("/update_question")
 async def update_question(*,
                         db: Session = Depends(get_db),
-                        base: GetAnswer
+                        base: UpdateQuestion
 ):
     # 
     base=jsonable_encoder(base)
