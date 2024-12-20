@@ -3,19 +3,51 @@ from app.utils import *
 from app.api.deps import *
 import json
 from sqlalchemy import func
-# from app.schemas import GetQuestions
+from app.schemas import *
+from fastapi.encoders import jsonable_encoder 
 
 
 router = APIRouter()
 
-# @router.post("/add_questions2")
-# async def addquestion(*,
-#                         db: Session = Depends(get_db),
-#                         question: GetQuestions
-# ):
-#      print(question.token)
-#      print(question.questions)
-     
+@router.post("/update_question")
+async def update_question(*,
+                        db: Session = Depends(get_db),
+                        base: GetAnswer
+):
+    # 
+    base=jsonable_encoder(base)
+    question_id=base["question_id"]
+    question_title=base["question_title"]
+    mark=base["mark"]
+    question_status=base["question_status"]
+    fill_answer=base["fill_answer"]
+    get_quesion=db.query(Question).filter(Question.id==question_id).first()
+    if question_status==2:
+        get_quesion.answer=fill_answer
+        db.commit()
+    if question_title!=None:
+        get_quesion.question_title=question_title
+        db.commit()
+
+    if mark!=None:
+        get_quesion.mark=mark
+        db.commit()
+
+    if question_status==1:
+        get_option=db.query(Option).filter(Option.question_id==question_id,Option.status==1)
+
+        for data in base["question_information"]:
+            option_id=data["option_id"]
+            answer_name=data["answer_name"]
+            answer_status=data["answer_status"]
+            row=get_option.filter(Option.id==option_id).first()
+            row.name=answer_name
+            row.answer_status=answer_status
+            db.commit()
+    
+
+    return ({"status":1,"msg":"Success."})
+ 
 
 @router.post("/add_question")
 async def addQuestions(
@@ -216,52 +248,52 @@ async def listQuestions(
                     "items":dataList,})
         return {"status":1,"msg":"Success","data":data}
 
-@router.post("/update_question")
-async def updateQuestion(
-                            db: Session = Depends(get_db),
-                            token: str = Form(...),
-                            question_id: int = Form(...),
-                            question_title: str = Form(...),
-                            options: str = Form(None, description="option1,option2,option3"),
-                            answers: str = Form(None, description="answer1,answer2,answer3"),
-):
-        user=get_user_token(db=db,token=token)
-        if not user:
-            return {"status":0,"msg":"Your login session expires.Please login again."}
-        if user.user_type not in [1,2]:
-             return {"status":0, "msg":"Access denied"}
+# @router.post("/update_question")
+# async def updateQuestion(
+#                             db: Session = Depends(get_db),
+#                             token: str = Form(...),
+#                             question_id: int = Form(...),
+#                             question_title: str = Form(...),
+#                             options: str = Form(None, description="option1,option2,option3"),
+#                             answers: str = Form(None, description="answer1,answer2,answer3"),
+# ):
+#         user=get_user_token(db=db,token=token)
+#         if not user:
+#             return {"status":0,"msg":"Your login session expires.Please login again."}
+#         if user.user_type not in [1,2]:
+#              return {"status":0, "msg":"Access denied"}
         
-        get_question = db.query(Question).filter(Question.id == question_id, Question.status == 1).first()
-        if not get_question:
-             return {"status":0, "msg": "Question not found"}
-        get_question.question_title = question_title
-        if options:
-            get_options = options.split(",")
-            for option in get_options:
-                 create_option = Option(
-                    name = option,
-                    answer_status = 2,
-                    question_id = question_id,
-                    status = 1,
-                    created_at = datetime.now(settings.tz_IN),
-                    updated_at = datetime.now(settings.tz_IN)
-                )
-                 db.add(create_option)
-            db.commit()
-        if answers:
-            get_answers = answers.split(",")
-            for option in get_answers:
-                 create_option = Option(
-                    name = option,
-                    answer_status = 1,
-                    question_id = question_id,
-                    status = 1,
-                    created_at = datetime.now(settings.tz_IN),
-                    updated_at = datetime.now(settings.tz_IN)
-                )
-                 db.add(create_option)
-            db.commit()
-        return {"status":1, "msg":"Question updated Successfully"}
+#         get_question = db.query(Question).filter(Question.id == question_id, Question.status == 1).first()
+#         if not get_question:
+#              return {"status":0, "msg": "Question not found"}
+#         get_question.question_title = question_title
+#         if options:
+#             get_options = options.split(",")
+#             for option in get_options:
+#                  create_option = Option(
+#                     name = option,
+#                     answer_status = 2,
+#                     question_id = question_id,
+#                     status = 1,
+#                     created_at = datetime.now(settings.tz_IN),
+#                     updated_at = datetime.now(settings.tz_IN)
+#                 )
+#                  db.add(create_option)
+#             db.commit()
+#         if answers:
+#             get_answers = answers.split(",")
+#             for option in get_answers:
+#                  create_option = Option(
+#                     name = option,
+#                     answer_status = 1,
+#                     question_id = question_id,
+#                     status = 1,
+#                     created_at = datetime.now(settings.tz_IN),
+#                     updated_at = datetime.now(settings.tz_IN)
+#                 )
+#                  db.add(create_option)
+#             db.commit()
+#         return {"status":1, "msg":"Question updated Successfully"}
 
 @router.post("/delete_option_and_answer")
 async def deleteOptionAndAnswer(
