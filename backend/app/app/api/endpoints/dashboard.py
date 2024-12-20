@@ -14,66 +14,81 @@ from api.deps import get_db,authenticate,get_by_user,get_user_token,phoneNo_vali
 from sqlalchemy import func, case
 
 router = APIRouter()
-@router.post("/today_checkIn")
-async def today_checkIn(
-    *,
-    db: Session = Depends(deps.get_db),
-    token: str = Form(...),
-):
-    user = deps.get_user_token(db=db, token=token)
-    if user:
+# @router.post("/today_checkIn")
+# async def today_checkIn(
+#     *,
+#     db: Session = Depends(deps.get_db),
+#     token: str = Form(...),
+# ):
+#     user = deps.get_user_token(db=db, token=token)
+#     if user:
 
-        today_date = datetime.now(settings.tz_IN).date()
+#         today_date = datetime.now(settings.tz_IN).date()
 
-        # Query to get all users, and only filter attendance for today's check-ins
-        # Get today's date based on the timezone
-        today_date = datetime.now(settings.tz_IN).date()
+#         # Query to get all users, and only filter attendance for today's check-ins
+#         # Get today's date based on the timezone
+#         today_date = datetime.now(settings.tz_IN).date()
 
-        # Query to get all users, and only filter attendance for today's check-ins
-        checkTodayCheckIN = (
-            db.query(User, Attendance)
-            .outerjoin(Attendance, Attendance.user_id == User.id)  # Outer join to include all users
-            .filter(
-                User.status == 1,  # Only active users
-                User.batch_id == 13,  # Only users in batch 13
-                # Include users with no attendance record at all or attendance record for today
-                (cast(Attendance.check_in, Date) == today_date) | (Attendance.id == None)  # Attendance check-in for today OR no attendance record
-            )
-            .all()
-        )
-        return checkTodayCheckIN
+#         # Query to get all users, and only filter attendance for today's check-ins
+#         checkTodayCheckIN = (
+#             db.query(User, Attendance)
+#             .outerjoin(Attendance, Attendance.user_id == User.id)  # Outer join to include all users
+#             .filter(
+#                 User.status == 1,  # Only active users
+#                 User.batch_id == 13,  # Only users in batch 13
+#                 # Include users with no attendance record at all or attendance record for today
+#                 (cast(Attendance.check_in, Date) == today_date) | (Attendance.id == None)  # Attendance check-in for today OR no attendance record
+#             )
+#             .all()
+#         )
+#         return checkTodayCheckIN
     
 
-
-@router.post("/get_student_count")
-async def get_student_count(
-                db:Session=Depends(get_db),
-                # token:str=Form(...)
-):
-    get_batch = db.query(Batch).filter(Batch.status == 1).first()
-    today = datetime.now().date()
-    no_of_student_in_batch = len(get_batch.users)
-    print(today)
-    no_student_present = db.query(Attendance).filter(cast(Attendance.check_in, Date )== today)
-    data={"no of students absent:",no_of_student_in_batch - no_student_present.count(),"no of student present:",no_student_present.count()}
-  
 
 
 
 @router.post("/application_count")
-async def application_count(db: Session = Depends(get_db),token:str=Form(...)):
+async def application_count(db: Session = Depends(get_db),
+                            token:str=Form(...),
+                            fromDateTime:datetime=Form(None),
+                            toDatetime:datetime=Form(None)):
     user=get_user_token(db=db,token=token)
     if  user.user_type in [1,2]:
-    
+        today = datetime.now(settings.tz_IN)
+        if toDatetime is None:
+            toDatetime = today.replace(hour=23, minute=59, second=59)
+        else:
+            toDatetime = toDatetime.replace(hour=23, minute=59, second=59)
+
+        if fromDateTime is None:
+            fromDateTime = today.replace(day=1, hour=0, minute=0, second=0)
+        else:
+            fromDateTime = fromDateTime.replace(hour=0, minute=0, second=0)
+        
         #application count
         application = db.query(
             ApplicationDetails.enquiry_id.label("enquiry") ,  EnquiryType.name.label("name") ,
             func.count(ApplicationDetails.enquiry_id).label("total") 
         )\
-        .join(EnquiryType, EnquiryType.id == ApplicationDetails.enquiry_id).filter(EnquiryType.status==1,ApplicationDetails.status==1) .group_by(ApplicationDetails.enquiry_id) .all()
-        application_data=[]
-        for enquiry,name,count in application:
-            application_data.append({"enquiry_id":enquiry,
+        .join(EnquiryType, EnquiryType.id == ApplicationDetails.enquiry_id)\
+            .filter(EnquiryType.status==1,ApplicationDetails.status==1)\
+                  .group_by(ApplicationDetails.enquiry_id) 
+        
+        application_Month=application.filter(ApplicationDetails.created_at.between(fromDateTime,toDatetime)).all()
+        aaa=db.query(ApplicationDetails).filter(func.date(ApplicationDetails.created_at)==today.date()).count()
+        
+        print(aaa,11111)
+        application_today=application.filter(func.date(ApplicationDetails.created_at)==today.date()).all()
+
+        application_data_month=[]
+        for enquiry,name,count in application_Month:
+            application_data_month.append({"enquiry_id":enquiry,
+                         "enquiry_name":name,
+                         "total":count})
+            
+        application_data_today=[]
+        for enquiry,name,count in application_today:
+            application_data_today.append({"enquiry_id":enquiry,
                          "enquiry_name":name,
                          "total":count})
         #batch count 
@@ -94,23 +109,15 @@ async def application_count(db: Session = Depends(get_db),token:str=Form(...)):
         no_of_student_in_batch = len(get_batch.users)
         no_student_present = db.query(Attendance).filter(cast(Attendance.check_in, Date )== today)
         absent=no_of_student_in_batch - no_student_present.count()
-        today_attendance={"no of students absent":absent,"no of student present":no_student_present.count()}
-
-        return {"status":1,"msg":"Success","application_count":application_data,"batch_count":batch_data,"attendance":today_attendance}
+        today_attendance={"students_absent":absent,"students_present":no_student_present.count()}
+        data=({"application_data_month":application_data_month,"application_data_today":application_data_today,"batch_count":batch_data,"attendance":today_attendance})
+        return {"status":1,"msg":"Success","data":data}
+        
     else:
         return {"status":-1,"msg":"Your login session expires.Please login again."}
     
 
    
-@router.post("/batch_count")
-async def batch_count(db: Session = Depends(get_db)):
- 
-    get_count = db.query(
-        User.batch_id,  Batch.name,
-        func.count(User.batch_id).label("total") 
-    )\
-    .join(Batch, Batch.id == User.batch_id).filter(User.status==1,Batch.status==1) .group_by(User.batch_id) .all()
 
-    return get_count
 
                        
