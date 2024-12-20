@@ -135,7 +135,7 @@ async def assignExam(
         for set in get_exam.sets:
               get_set_ids.append(set.id)
         # Get total for all set of papers
-        sumof_all_paper_marks = db.query(func.sum(Question.mark)).filter(Question.set_id.in_(get_set_ids)).group_by(Question.set_id).all()
+        sumof_all_paper_marks = db.query(func.sum(Question.mark)).filter(Question.set_id.in_(get_set_ids),Question.status==1).group_by(Question.set_id).all()
 
         if len(sumof_all_paper_marks) != len(get_set_ids):
               return {"status":0, "msg":"Some set of paper has no questions"}
@@ -218,7 +218,7 @@ async def listStudentExam(
 
       totalCount= get_assigned_details.count()
       total_page,offset,limit=get_pagination(totalCount,page,size)
-      get_assigned_details=get_assigned_details.order_by(AssignExam.id).limit(limit).offset(offset).all()
+      get_assigned_details=get_assigned_details.order_by(AssignExam.id.desc()).limit(limit).offset(offset).all()
       dataList =[]
 
       for data in get_assigned_details:
@@ -233,6 +233,7 @@ async def listStudentExam(
                   "set_id": data.set_id,
                   "set_name": data.set.name,
                   "created_at": data.created_at,
+                  "attended_at": data.exam_details[0].created_at if data.exam_details else None,
                   "assigned_id": data.id,
                   "student_id": data.student_id,
                   "student_name": data.student.name,

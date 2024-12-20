@@ -43,7 +43,7 @@ async def createUser(db:Session=Depends(get_db),
     checkUser = db.query(User).filter(User.status==1)
 
     if checkUser.filter(User.email == email).first():
-        return {"status":0,"msg":"Give Email is already exist"}
+        return {"status":0,"msg":"Given Email is already exist"}
     if checkUser.filter(User.phone==phone).first():
         return {"status":0,"msg":"Given Phone Number is already exist"}
     

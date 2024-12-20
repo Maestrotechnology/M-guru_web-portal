@@ -68,8 +68,8 @@ async def listSet(
                     "set_name":row.name.capitalize(),
                     "exam_id":row.exam_id,
                     "created_at":row.created_at,
-                    "no_of_questions":len(row.questions) if row.questions else None,
-                    "total": sum(question.mark for question in row.questions) if row.questions else None
+                    "no_of_questions":len([question for question in row.questions if question.status == 1]) if row.questions else None,
+                    "total": sum(question.mark for question in row.questions if question.status == 1) if row.questions else None
                 })
         data=({"page":page,"size":size,"total_page":total_page,
                     "total_count":totalCount,
