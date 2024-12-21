@@ -13,7 +13,7 @@ class UpdateQuestion(BaseModel):
     question_title:Optional[str] = None
     mark:Optional[int] = None
     question_information:Optional[list[QuestionDetail]] = None
-    question_status:int
+    type_of:int
     fill_answer:Optional[str] = None
     token:str
 

@@ -19,33 +19,32 @@ async def update_question(*,
     question_id=base["question_id"]
     question_title=base["question_title"]
     mark=base["mark"]
-    question_status=base["question_status"]
+    type_of_question=base["type_of"]
     fill_answer=base["fill_answer"]
-    get_quesion=db.query(Question).filter(Question.id==question_id).first()
-    if question_status==2:
-        get_quesion.answer=fill_answer
-        db.commit()
-    if question_title!=None:
-        get_quesion.question_title=question_title
-        db.commit()
-
-    if mark!=None:
-        get_quesion.mark=mark
-        db.commit()
-
-    if question_status==1:
-        get_option=db.query(Option).filter(Option.question_id==question_id,Option.status==1)
-
-        for data in base["question_information"]:
-            option_id=data["option_id"]
-            answer_name=data["answer_name"]
-            answer_status=data["answer_status"]
-            row=get_option.filter(Option.id==option_id).first()
-            row.name=answer_name
-            row.answer_status=answer_status
-            db.commit()
+    get_quesion=db.query(Question).filter(Question.id == question_id,Question.status ==1).first()
+    if not get_quesion:
+         return{"stauts":0, "msg":"Question not found"}
+    get_quesion.question_title = question_title
     
+    if type_of_question==2:
+        get_quesion.answer=fill_answer
 
+
+    if mark:
+        get_quesion.mark=mark
+    db.commit()
+
+    if type_of_question==1 or type_of_question ==3:
+        
+        for data in base["question_information"]:
+            get_option=db.query(Option).filter(Option.id==data["option_id"],Option.status==1).first()
+            if not get_option:
+                 return {"status":0, "msg":"Option not found"}
+            get_option.name = data["answer_name"]
+            get_option.answer_status = data["answer_status"] if data["answer_status"] else 2
+            db.commit()
+            print(get_option.answer_status )
+    
     return ({"status":1,"msg":"Success."})
  
 
@@ -195,7 +194,7 @@ async def listQuestions(
         get_question_ids = []
         for question in get_questions:
              get_question_ids.append(question.id)
-        get_questions = get_questions.order_by(Question.id)
+        get_questions = get_questions.order_by(Question.id.desc())
         totalCount= get_questions.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         get_questions=get_questions.limit(limit).offset(offset).all()

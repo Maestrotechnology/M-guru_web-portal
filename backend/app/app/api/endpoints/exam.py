@@ -211,11 +211,12 @@ async def listStudentExam(
             get_assigned_details = get_assigned_details.filter(
                   AssignExam.exam_id == exam_id
             )
+      print(course_id)
       if course_id:
             get_assigned_details = get_assigned_details.filter(
                   AssignExam.course_id == course_id
             )
-
+            print(get_assigned_details.count())
       totalCount= get_assigned_details.count()
       total_page,offset,limit=get_pagination(totalCount,page,size)
       get_assigned_details=get_assigned_details.order_by(AssignExam.id.desc()).limit(limit).offset(offset).all()
@@ -235,6 +236,7 @@ async def listStudentExam(
                   "exam_name": data.exam.name,
                   "set_id": data.set_id,
                   "set_name": data.set.name,
+                  "course": data.course.name if data.course else None,
                   "created_at": data.created_at,
                   "attended_at": data.exam_details[0].created_at if data.exam_details else None,
                   "assigned_id": data.id,

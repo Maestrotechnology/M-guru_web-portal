@@ -53,12 +53,12 @@ async def createApplication(*,
     #     return {"status":0,"msg":"Your login session expires.Please login again."}  
     # if user.user_type != 1:
     #     return {"status":0,"msg":"Access denied"}
-    get_applications = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.email==email).first()
-    if get_applications:
-        return {"status":0,"msg":"Give Email is already exist"}
-    get_user = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.phone==phone).first()
-    if get_user:
-        return {"status":0,"msg":"Given Phone Number is already exist"}
+    # get_email = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.email==email).first()
+    # if get_email:
+    #     return {"status":0,"msg":"Give Email is already exist"}
+    # get_phone = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.phone==phone).first()
+    # if get_phone:
+    #     return {"status":0,"msg":"Given Phone Number is already exist"}
     check_enquiry_id = db.query(EnquiryType).filter(EnquiryType.id == enquiry_id).first()
     if not check_enquiry_id:
         return {"status":0, "msg":"Invalid enquiry type"}
@@ -105,12 +105,12 @@ async def updateApplication(*,
     if not db_application:
         return {"status":0, "msg":"Invalid application"}
     
-    get_applications = db.query(ApplicationDetails).filter(ApplicationDetails.id!=application_id,ApplicationDetails.status==1,ApplicationDetails.email==email).first()
-    if get_applications:
-        return {"status":0,"msg":"Give Email is already exist"}
-    get_user = db.query(ApplicationDetails).filter(ApplicationDetails.id!=application_id,ApplicationDetails.status==1,ApplicationDetails.phone==phone).first()
-    if get_user:
-        return {"status":0,"msg":"Given Phone Number is already exist"}
+    # get_applications = db.query(ApplicationDetails).filter(ApplicationDetails.id!=application_id,ApplicationDetails.status==1,ApplicationDetails.email==email).first()
+    # if get_applications:
+    #     return {"status":0,"msg":"Give Email is already exist"}
+    # get_user = db.query(ApplicationDetails).filter(ApplicationDetails.id!=application_id,ApplicationDetails.status==1,ApplicationDetails.phone==phone).first()
+    # if get_user:
+    #     return {"status":0,"msg":"Given Phone Number is already exist"}
     
     check_enquiry_id = db.query(EnquiryType).filter(EnquiryType.id == enquiry_id).first()
     if not check_enquiry_id:
@@ -206,7 +206,7 @@ async def listApplication(*,
         else:
             db_applications = db_applications.filter(
                 ApplicationDetails.created_at >=from_date,
-                ApplicationDetails.created_at >=to_date,
+                ApplicationDetails.created_at <=to_date,
             )
         
     

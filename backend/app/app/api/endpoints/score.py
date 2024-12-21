@@ -155,7 +155,9 @@ async def listScore(
     get_student_score=get_student_score.limit(limit).offset(offset).all()
 
     data_list = []
+    total_score = 0
     for data in get_student_score:
+        total_score+=data.mark
         data_list.append({
             "id":data.id,
             "mark":data.mark,
@@ -170,6 +172,7 @@ async def listScore(
         })
     data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,
+                "student_total_score":total_score,
                 "items":data_list})
     return {"status":1,"msg":"Success","data":data}
 
