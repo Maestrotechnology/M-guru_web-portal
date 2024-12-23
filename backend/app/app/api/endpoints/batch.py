@@ -195,7 +195,7 @@ async def allocateBatch(token:str=Form(...),
     if checkUser.filter(User.phone==application_data.phone,User.batch_id==batch_id).first():
         return {"status":0,"msg":"Given Phone Number is already exist"}
     
-    await send_mail(receiver_email=application_data.email,message=get_email_templete(application_data,batch_data.start_date,4),subject="Application status")
+    # await send_mail(receiver_email=application_data.email,message=get_email_templete(application_data,batch_data.start_date,4),subject="Application status")
 
     create_student = User(
         name = application_data.name,

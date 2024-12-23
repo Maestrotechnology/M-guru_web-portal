@@ -55,7 +55,8 @@ async def listStudentProject(
     if user.user_type == 3:
         get_projects = db.query(StudentProjectDetail).filter(StudentProjectDetail.status==1,StudentProjectDetail.user_id==user.id)
     else:
-        batch = db.query(Batch).filter(Batch.status==1).first()
+        batch = db.query(Batch).filter(Batch.status==1).all()
+        batch_ids = [data.id for data in batch]
         if not batch:
             return {"status":0,"msg":"None of the batches are active"}
         # get_projects = db.query(
@@ -79,7 +80,7 @@ async def listStudentProject(
         ).outerjoin(
             Score,
             Score.student_project_id == StudentProjectDetail.id
-        ).filter(User.batch_id == batch.id,StudentProjectDetail.status == 1,Score.id.is_(None))
+        ).filter(User.batch_id.in_(batch_ids),StudentProjectDetail.status == 1,Score.id.is_(None))
 
     if course_id:
             get_projects = get_projects.filter(User.course_id==course_id)

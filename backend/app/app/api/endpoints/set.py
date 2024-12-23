@@ -116,4 +116,31 @@ async def deleteUpdate(
       get_set.status = -1
       db.commit()
       return {"status":1, "msg": "Set Successfully deleted"}
+
+@router.post("/get_set_questions")
+async def getSetQuestion(
+                              db: Session = Depends(get_db),
+                              token: str = Form(...),
+                              set_id: int = Form(...)
+):
+      user = get_user_token(db=db,token=token)
+      if not user:
+          return {"status":0,"msg":"Your login session expires.Please login again."}
+      if user.user_type not in [1,2]:
+              return {"status":0, "msg":"Access denied"}
+      
+      get_set = db.query(Set).filter(Set.id == set_id, Set.status == 1).first()
+      data = {"choose":0,"fill_in_the_blank":0,"multi_choose":0,"paragraph":0}
+      if get_set.questions:
+            for question in get_set.questions:
+                  if question.status == 1:
+                        if question.question_type_id == 1:
+                              data["choose"]+=1
+                        if question.question_type_id == 2:
+                              data["fill_in_the_blank"]+=1
+                        if question.question_type_id == 3:
+                              data["multi_choose"]+=1
+                        if question.question_type_id == 4:
+                              data["paragraph"]+=1
+      return {"status":1, "msg":"Success","data":data}
       

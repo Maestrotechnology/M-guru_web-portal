@@ -321,7 +321,7 @@ async def scheduleInterview(*,
         return {"status":1, "msg":"Interview scheduled Successfully"}
     elif application_status==2:
 
-        await send_mail(receiver_email=db_application.email,message=get_email_templete(db_application,scheduled_date,application_status),subject="Application status")
+        await send_mail(receiver_email=db_application.email,message=get_email_templete(db_application,scheduled_date,application_status),subject=" Inviting for Internship Interview " if application_status==1 else "Application status")
         db_application.application_status=2
         db.add(db_application)
         db.commit()
@@ -357,11 +357,24 @@ async def enterInterviewMarks(*,
 
     if not db_interview_details:
         return {"status":0, "msg":"Invalid interview details"}
+        
     if application_status:
         db_interview_details.application.application_status=application_status
         db_interview_details.application.scholarship=scholarship
    
-
+    if db_interview_details.communication_mark is None and db_interview_details.aptitude_mark is None and db_interview_details.programming_mark is None and db_interview_details.overall_mark is None:
+        get_status = 0
+        if application_status==1:
+            get_status = 3
+            subject = "Congratulations! Internship Selection at Velava Foundation "
+        elif application_status==2:
+            get_status = 4
+            subject = "Internship Application Outcome "
+        elif application_status==3:
+            get_status = 5
+            subject = "Application status"
+        await send_mail(db_interview_details.application.email,subject=subject,message=get_email_templete(application=db_interview_details.application,status=get_status))        
+        
     db_interview_details.attended_date = attended_date
     db_interview_details.communication_mark = communication_mark
     db_interview_details.aptitude_mark = aptitude_mark

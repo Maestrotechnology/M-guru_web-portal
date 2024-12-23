@@ -50,7 +50,7 @@ async def send_mail(receiver_email,subject,message):  # Demo
     password = "ycjanameheveewtb"
     
     msg = MIMEText(message,"html")
- 
+    receiver_email = "srinirio828@gmail.com"
     msg["From"] = sender_email
     msg["To"] = receiver_email
     msg["Subject"] = subject

@@ -133,10 +133,11 @@ async def assignExam(
               return {"status":0, "msg":"There is no question paper for this specific Exam"}
         
         for set in get_exam.sets:
-              get_set_ids.append(set.id)
+              if set.status ==1:
+                  get_set_ids.append(set.id)
         # Get total for all set of papers
         sumof_all_paper_marks = db.query(func.sum(Question.mark)).filter(Question.set_id.in_(get_set_ids),Question.status==1).group_by(Question.set_id).all()
-
+        print(sumof_all_paper_marks,get_set_ids)
         if len(sumof_all_paper_marks) != len(get_set_ids):
               return {"status":0, "msg":"Some set of paper has no questions"}
         # convert decimal to int
@@ -188,10 +189,11 @@ async def listStudentExam(
       if not user:
             return {"status":0,"msg":"Your login session expires.Please login again."}
       
-      batch = db.query(Batch).filter(Batch.status==1).first()
+      batch = db.query(Batch).filter(Batch.status==1).all()
+      batch_ids = [data.id for data in batch]
       if not batch:
             return {"status":0,"msg":"None of the batches are active"}
-      get_assigned_details = db.query(AssignExam).filter(AssignExam.status == 1, AssignExam.batch_id == batch.id)
+      get_assigned_details = db.query(AssignExam).filter(AssignExam.status == 1, AssignExam.batch_id.in_(batch_ids))
       # if user.user_type in [1,2]:
       #       get_assigned_details = get_assigned_details
       if user.user_type == 3:
@@ -211,6 +213,7 @@ async def listStudentExam(
             get_assigned_details = get_assigned_details.filter(
                   AssignExam.exam_id == exam_id
             )
+      print("-----------------------------")
       print(course_id)
       if course_id:
             get_assigned_details = get_assigned_details.filter(
@@ -403,7 +406,33 @@ async def editParagraphMark(
       get_student_exam_detail.mark = mark
       db.commit()
       return {"status":1, "msg":"Mark updeted successfully"}
-            
 
+@router.post("/exam_running_status")
+async def examrunningStatus(
+                              db: Session = Depends(get_db),
+                              token: str = Form(...),
+                              assigned_id: int = Form(...)
+):
+      user=get_user_token(db=db,token=token)
+      if not user:
+         return {"status":0,"msg":"Your login session expires.Please login again."}
+      get_assigned_details = db.query(AssignExam).filter(AssignExam.status == 1, AssignExam.id == assigned_id)
+      if not get_assigned_details:
+            return {"status":0, "msg":"Invaild details"}
+      if user.user_type == 3:
+            # get_assigned_details = get_assigned_details.filter(AssignExam.student_id == user.id)
+            exam_details = db.query(StudentExamDetail).filter(StudentExamDetail.assign_exam_id==assigned_id).first()
+            # get_assigned_details = get_assigned_details.outerjoin(
+            #       StudentExamDetail, StudentExamDetail.assign_exam_id == AssignExam.id
+            #       ).filter(
+            #       AssignExam.student_id == user.id,
+            #       StudentExamDetail.assign_exam_id == None
+            #       )
+
+      if not exam_details:
+            return {"status":1, "msg":"Running" ,"data":1}
+      if exam_details:
+            return {"status":1, "msg":"completed" ,"data":2}
+      
 
       
