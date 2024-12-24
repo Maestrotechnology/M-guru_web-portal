@@ -25,7 +25,9 @@ class GetQuestion(BaseModel):
     answer:  Optional[str] = None
 
 class GetAnswer(BaseModel):
-    question_information:list[GetQuestion]
+    question_information:GetQuestion
     assign_exam_id:int 
     token:str
+    # completed: int | None = None
+    student_exam_id: int | None = None
  

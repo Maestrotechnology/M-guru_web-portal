@@ -164,6 +164,7 @@ async def listQuestions(
                         question_title: str = Form(None),
                         question_id: int = Form(None),
                         type_id: int = Form(None),
+                        assigned_id: int = Form(None),
                         page: int = 1,
                         size: int = 50
 
@@ -200,7 +201,23 @@ async def listQuestions(
         get_questions=get_questions.limit(limit).offset(offset).all()
 
         dataList =[]
-    
+        get_assigned = None
+        get_student_answer = None
+        response = {}
+        #----------------------------
+        if assigned_id:
+            get_assigned = db.query(AssignExam).filter(AssignExam.id == assigned_id,AssignExam.status==1).first()
+            if not get_assigned:
+                return {"status":0,"msg":"Invaild details"}
+            get_question_id = get_questions[0].id
+            # if 
+            get_student_answer = db.query(StudentExamDetail).filter(StudentExamDetail.assign_exam_id == assigned_id,StudentExamDetail.question_id == get_question_id).first()
+            if get_student_answer:
+                response["question_id"] = get_student_answer.question_id
+                response["answer_ids"] = [ data for data in get_student_answer.option_ids.split(",")] if get_student_answer.option_ids else None
+                response["answer"] = get_student_answer.answer if get_student_answer.answer else None,
+                response["student_exam_id"] = get_student_answer.id
+        #----------------------------
         for question in get_questions:
                 get_option = []
                 get_answer = []
@@ -239,8 +256,8 @@ async def listQuestions(
                     "type_id": question.question_type_id,
                     "type": question.type_of.name,
                     "set_id": question.set_id,
-                    "exam_id": question.exam_id
-                
+                    "exam_id": question.exam_id,
+                    "student_answer": response if assigned_id else None             
                 })
         data=({"page":page,"size":size,"total_page":total_page,
                     "total_count":totalCount,"total_mark":totalMarkForParticularPaper,"question_ids": sorted(get_question_ids,reverse=True),
