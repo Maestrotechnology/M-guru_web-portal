@@ -99,7 +99,7 @@ async def listTask(
             "name":data.name.capitalize(),
             "task_report_url": f"{settings.BASEURL}/{data.task_report_url}" if data.task_report_url else None,
             "from_date": data.from_date.strftime("%Y-%m-%d %H:%M") if data.from_date else None,
-            "end_date": data.end_date.strftime("%Y-%m-%d %H:%M") if data.from_date else None,
+            "end_date": data.end_date.strftime("%Y-%m-%d %H:%M") if data.end_date else None,
             "description": data.description,
             "course_id": data.course_id,
             "course_name": data.course.name if data.course else None,

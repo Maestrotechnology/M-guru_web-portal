@@ -199,6 +199,8 @@ async def deleteCourseMedia(
         return {"status":0,"msg":"Access denied"}
     
     course_media = db.query(CourseMedia).filter(CourseMedia.id == course_media_id).first()
-    db.delete(course_media)
+    if not course_media:
+        return {'status':0,'msg':'Course media not found'}
+    course_media.status = -1
     db.commit()
     return {"status":1,"msg":"Successfully deleted"}

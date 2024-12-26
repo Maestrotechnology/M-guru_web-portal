@@ -60,11 +60,12 @@ async def listExam(
         dataList =[]
     
         for row in get_exam:
+                set_counts = db.query(Set).filter(Set.status ==1,Set.exam_id==row.id).count()
                 dataList.append({
                     "exam_id" :row.id,
                     "exam_name":row.name.capitalize(),
                     "created_at":row.created_at,
-                    "no_of_set":len(row.sets)
+                    "no_of_set":set_counts
                 
                 })
         data=({"page":page,"size":size,"total_page":total_page,
@@ -204,6 +205,7 @@ async def listStudentExam(
                   AssignExam.student_id == user.id,
                   StudentExamDetail.assign_exam_id == None
                   )
+            print(get_assigned_details.count(),1111111111)
       # if batch_id:
       if student_id:
             get_assigned_details = get_assigned_details.filter(
@@ -215,12 +217,15 @@ async def listStudentExam(
             )
       print("-----------------------------")
       print(course_id)
+      print(get_assigned_details.count(),22222222)
+
       if course_id:
             get_assigned_details = get_assigned_details.filter(
                   AssignExam.course_id == course_id
             )
             print(get_assigned_details.count())
       totalCount= get_assigned_details.count()
+      print(get_assigned_details.count(),33333333)
       total_page,offset,limit=get_pagination(totalCount,page,size)
       get_assigned_details=get_assigned_details.order_by(AssignExam.id.desc()).limit(limit).offset(offset).all()
       dataList =[]

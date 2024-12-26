@@ -2,14 +2,13 @@ from fastapi import APIRouter,Depends,UploadFile,Form,File
 from typing import Annotated
 from api.deps import *
 from sqlalchemy.orm import Session
-from sqlalchemy import and_,cast,Date
+from sqlalchemy import and_,cast,Date, func
 from pydantic import EmailStr
 from app.models import *
 from core.config import settings
-from datetime import datetime
+from datetime import datetime,date
 from utils import file_storage,send_mail,get_pagination
 from app.api.endpoints.email_templetes import get_email_templete
-from datetime import date
 
 router = APIRouter()
 
@@ -151,6 +150,8 @@ async def listApplication(*,
                             size: Annotated[int, Form()] = 10,
 
 ):
+    print(from_date)
+    today =date.today()
     user = get_user_token(db=db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}  
@@ -182,14 +183,18 @@ async def listApplication(*,
         )
     else:
         return {"status": 0, "msg":"Invaild type"}
-    if from_date and to_date:
+    if from_date or to_date:
+        if not from_date:
+            from_date = today.replace(month=1,day=1)
+        if not to_date:
+            to_date = today
         if type == 2:
             db_applications = (
                                 db_applications
                                 .filter(
                                     and_(
-                                        Interview.scheduled_date >= from_date,
-                                        Interview.scheduled_date <= to_date,
+                                        func.date(Interview.scheduled_date) >= from_date,
+                                        func.date(Interview.scheduled_date) <= to_date,
                                     )
                                 )
                             )
@@ -198,15 +203,16 @@ async def listApplication(*,
                                 db_applications
                                 .filter(
                                     and_(
-                                        Interview.attended_date >= from_date,
-                                        Interview.attended_date <= to_date,
+                                        func.date(Interview.attended_date) >= from_date,
+                                        func.date(Interview.attended_date) <= to_date,
                                     )
                                 )
                             )
         else:
+            print(from_date)
             db_applications = db_applications.filter(
-                ApplicationDetails.created_at >=from_date,
-                ApplicationDetails.created_at <=to_date,
+                func.date(ApplicationDetails.created_at) >=from_date,
+                func.date(ApplicationDetails.created_at) <=to_date,
             )
         
     
