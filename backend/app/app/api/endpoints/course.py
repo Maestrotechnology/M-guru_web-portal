@@ -106,7 +106,11 @@ async def listCourse(
         if Course_name:
             getCourse = getCourse.filter(Course.name.like("%"+Course_name+"%"))
         if user.user_type == 3 or user.user_type == 2:
-            getCourse = getCourse.filter(Course.id == user.course_id)
+            get_assign_course = db.query(CourseAssign).filter(CourseAssign.user_id==user.id,CourseAssign.status==1).all()
+            course_id = []
+            for course in get_assign_course:
+                course_id.append(course.course_id)
+            getCourse = getCourse.filter(Course.id.in_(course_id))
             
         getCourse = getCourse.order_by(Course.name)
         totalCount= getCourse.count()

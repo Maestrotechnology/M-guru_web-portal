@@ -46,6 +46,7 @@ async def createBatch(db:Session=Depends(get_db),
                     description=description,
                     created_at = datetime.now(),
                     status =1,
+                    created_by= user.id
                     )
     db.add(addBatch)
     db.commit()
@@ -58,10 +59,10 @@ async def createBatch(db:Session=Depends(get_db),
 async def updateBatch(db:Session=Depends(get_db),
                      token:str = Form(...),
                      batch_id:int = Form(...),
-                     name:str = Form(None),
-                     start_date:datetime=Form(None),
-                     end_date:datetime=Form(None),
-                     fee:int=Form(None),
+                     name:str = Form(...),
+                     start_date:datetime=Form(...),
+                     end_date:datetime=Form(...),
+                     fee:int=Form(...),
 ):
     
     user = get_user_token(db,token=token)
@@ -127,7 +128,7 @@ async def listBatch(db:Session=Depends(deps.get_db),
                    token:str=Form(...),page:int=1,
                    size:int=10,
                    Batch_name:str=Form(None),
-                   active_inactive_batch: int = Form(...,description="1-> active , 2-> inactive")
+                   active_inactive_batch: int = Form(None,description="1-> active , 2-> inactive")
                    ):
     user=get_user_token(db=db,token=token)
     if not user:
@@ -135,9 +136,9 @@ async def listBatch(db:Session=Depends(deps.get_db),
     
     if user.user_type not in [1,2]:
         return {"status":0,"msg":"Access denied"}
-
+    getBatch =  db.query(Batch).filter(Batch.status.in_([1,2]))
     if active_inactive_batch:
-        getBatch =  db.query(Batch).filter(Batch.status==active_inactive_batch)
+        getBatch =  getBatch.filter(Batch.status==active_inactive_batch)
     if Batch_name:
         getBatch = getBatch.filter(Batch.name.like("%"+Batch_name+"%"))
     getBatch = getBatch.order_by(Batch.id.desc())
@@ -147,13 +148,14 @@ async def listBatch(db:Session=Depends(deps.get_db),
     dataList =[]
 
     for row in getBatch:
+        batch_count = db.query(User).filter(User.batch_id==row.id,User.user_type==3,User.status.in_([1,2])).count()
         dataList.append({
                 "Batch_id" :row.id,
                 "Batch_name":row.name.capitalize(),
                 "start_date":row.start_date,#.strftime("%d-%m-%Y %H:%M"),
                 "end_date":row.end_date,#.strftime("%d-%m-%Y %H:%M"),
                 "fee":row.fee,
-                "batch_count":len(row.users),
+                "batch_count":batch_count,
                 "status": row.status
             })
     data=({"page":page,"size":size,"total_page":total_page,
@@ -224,8 +226,8 @@ async def listBatchDetails(
                             name: str = Form(None),
                             email: str = Form(None),
                             phone: str = Form(None),    
-                            page: int= Form(1),
-                            size: int= Form(10)
+                            page:int=1,
+                            size:int=50,
 ):
     user=get_user_token(db=db,token=token)
     if not user:
@@ -233,33 +235,48 @@ async def listBatchDetails(
     
     if user.user_type not in [1,2]:
         return {"status":0,"msg":"Access denied"}
-    if user.user_type == 2:
-        course_id = user.course_id
+        
     
     batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status!=-1).first()
     if not batch_data:
         return {"status":0, "msg":"Invalid batch"}
     
     students = db.query(User).filter(
-        User.batch_id==batch_id,User.status==1,User.user_type==3
-    )
+        User.batch_id==batch_id,User.status.in_([1,2]),User.user_type==3
+    ).join(
+            CourseAssign, CourseAssign.user_id == User.id)
+    print(students.count(),11111111111111111)
+    if user.user_type ==2:
+        course_list = [course.course_id for course in db.query(CourseAssign).filter(CourseAssign.user_id == user.id, CourseAssign.status == 1).all()]
+        students = students.filter(CourseAssign.course_id.in_(course_list))
     if course_id:
-        students = students.filter(User.course_id==course_id)
+        students = students.filter(CourseAssign.course_id == course_id,CourseAssign.status==1)
     if name:
         students = students.filter(User.name.like(f"%{name}%"))
     if email:
         students = students.filter(User.email.like(f"%{email}%"))
     if phone:
         students = students.filter(User.phone.like(f"%{phone}%"))
-    
+    print(students.count(),222222222222222)
     students = students.order_by(User.id.desc())
+    print(students.count(),333333333333)
     totalCount= students.count()
 
     total_page,offset,limit=get_pagination(totalCount,page,size)
+    print(limit,offset)
     students=students.limit(limit).offset(offset).all()
+    print(len(students))
     dataList =[]
 
     for student in students:
+        course_data = []
+        get_course = db.query(Course).join(CourseAssign,Course.id==CourseAssign.course_id).filter(CourseAssign.user_id==student.id,CourseAssign.status==1).all()
+        if get_course:
+            for course in get_course:
+                course_data.append({
+                    "Course_Id":course.id,
+                    "Course_name":course.name
+                })
         dataList.append({
             "id": student.id,
             "name": student.name.capitalize(),
@@ -267,9 +284,9 @@ async def listBatchDetails(
             "username": student.username,
             "phone": student.phone,
             "address": student.address,
-            "course": student.course.name if student.course else None,
+            "course": course_data,
             "batch_id": batch_id,
-            "course_id": student.course_id
+            # "course_id": student.course_id
         })
         
     data=({"page":page,
@@ -297,10 +314,13 @@ async def listActiveBranchStudent(
     if user.user_type not in [1,2]:
         return {"status":0,"msg":"Access denied"}
 
-    students = db.query(User).join(Batch).filter(Batch.status==1,User.user_type==3,User.status==1)
-
+    students = db.query(User).join(Batch,Batch.id == User.batch_id).join(
+            CourseAssign, CourseAssign.user_id == User.id 
+        ).filter(Batch.status==1,User.user_type==3,User.status==1,CourseAssign.status==1)
+    course_list = []
+    
     if course_id:
-        students = students.filter(User.course_id == course_id)
+        students = students.filter(CourseAssign.course_id == course_id)
     if name:
         students = students.filter(User.name.like(f"%{name}%"))
     if email:
@@ -323,9 +343,9 @@ async def listActiveBranchStudent(
             "username": student.username,
             "phone": student.phone,
             "address": student.address,
-            "course": student.course.name if student.course else None,
+            # "course": student.course.name if student.course else None,
             "batch_id": student.batch_id,
-            "course_id": student.course_id,
+            # "course_id": student.course_id,
             
         })
         

@@ -75,15 +75,20 @@ async def dropDownTask(
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
     
-    get_task = db.query(Task).filter(Task.status == 1).order_by(Task.name).all()
+    get_task = db.query(Task).filter(Task.status == 1).order_by(Task.name)
+    if user.user_type ==2:
+        get_task = get_task.join(CourseAssign,CourseAssign.course_id==Task.course_id).filter(CourseAssign.user_id==user.id,CourseAssign.status==1)
+    if user.user_type ==3:
+        get_task = get_task.join(CourseAssign,CourseAssign.course_id==Task.course_id).filter(CourseAssign.user_id==user.id,CourseAssign.status==1,Task.batch_id==user.batch_id)
+    get_task = get_task.all()
     data_list = []
     for data in get_task:
         data_list.append({
             "id":data.id,
-            "name":data.name.capitalize()
+            "name":data.name,
         })
     return {"status":1,"msg":"Success","data":data_list}
-    
+
 
 @router.post("/dropDownTrainer")
 async def dropDownTrainer(
@@ -104,23 +109,23 @@ async def dropDownTrainer(
     return {"status":1,"msg":"Success","data":data_list}
 
 
-@router.post("/dropdown_year")
-async def dropdownYear(
-                        db:Session = Depends(deps.get_db),
-                        token:str=Form(...)
-):
-    user = get_user_token(db,token=token)
-    if not user:
-        return {"status":0,"msg":"Your login session expires.Please login again."}
+# @router.post("/dropdown_year")
+# async def dropdownYear(
+#                         db:Session = Depends(deps.get_db),
+#                         token:str=Form(...)
+# ):
+#     user = get_user_token(db,token=token)
+#     if not user:
+#         return {"status":0,"msg":"Your login session expires.Please login again."}
     
-    get_year = db.query(PassoutYear).all()
-    data_list = []
-    for data in get_year:
-        data_list.append({
-            "id":data.id,
-            "name":data.name
-        })
-    return {"status":1,"msg":"Success","data":data_list}
+#     get_year = db.query(PassoutYear).all()
+#     data_list = []
+#     for data in get_year:
+#         data_list.append({
+#             "id":data.id,
+#             "name":data.name
+#         })
+#     return {"status":1,"msg":"Success","data":data_list}
 
 @router.post("/downQuestionType")
 async def questionType(
@@ -143,7 +148,8 @@ async def questionType(
 @router.post("/dropdown_active_batch_student")
 async def dropdownActiveBatchStudent(
                                         db: Session = Depends(get_db),
-                                        token: str = Form(...)
+                                        token: str = Form(...),
+                                        course_id : int = Form(None),
 ):
         user = get_user_token(db,token=token)
         if not user:
@@ -151,7 +157,10 @@ async def dropdownActiveBatchStudent(
         
         get_students = db.query(User).join(Batch,
                           Batch.id == User.batch_id                   
-                        ).filter(User.user_type == 3, User.status == 1, Batch.status == 1).order_by(User.name).all()
+                        ).filter(User.user_type == 3, User.status == 1, Batch.status == 1).order_by(User.name)
+        if course_id:
+            get_students = get_students.filter(User.course_id == course_id)
+        get_students = get_students.all()
         data_list = []
         for data in get_students:
             data_list.append({

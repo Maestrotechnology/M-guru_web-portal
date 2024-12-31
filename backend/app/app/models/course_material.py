@@ -16,10 +16,12 @@ class CourseMaterial(Base):
     # ForeignKey
     batch_id = Column(Integer,ForeignKey("batch.id"))
     course_id = Column(Integer,ForeignKey("course.id"))
-    created_by_user_id = Column(Integer, ForeignKey("user.id"))
+    created_by = Column(Integer, ForeignKey("user.id"))
 
     #relationship
     course = relationship("Course",back_populates="materials")
-    documents = relationship("CourseMedia", back_populates="course_material")
-    created_by = relationship("User",back_populates="materials")
+    course_media = relationship("CourseMedia", back_populates="course_material")
+    user = relationship("User",back_populates="course_material")
     batch = relationship("Batch",back_populates="course_material")
+    material_access = relationship("MaterialAccess",back_populates="course_material")
+    

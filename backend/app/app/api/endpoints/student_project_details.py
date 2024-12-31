@@ -38,43 +38,119 @@ async def uploadProject(
     return {"status":1, "msg":"Successfully project submitted"}
 
 
+# @router.post("/list_student_project")
+# async def listStudentProject(
+#                                 db: Session = Depends(get_db),
+#                                 token: str = Form(...),
+#                                 # batch_id: int = Form(None),
+#                                 course_id: int = Form(None),
+#                                 task_id: int = Form(None),
+#                                 page: int = 1,
+#                                 size: int = 50
+# ):
+#     user = get_user_token(db,token=token)
+#     if not user:
+#         return {"status":0,"msg":"Your login session expires.Please login again."}
+    
+#     if user.user_type == 3:
+#         get_projects = db.query(StudentProjectDetail).filter(StudentProjectDetail.status==1,StudentProjectDetail.user_id==user.id)
+#     else:
+#         batch = db.query(Batch).filter(Batch.status==1).all()
+#         batch_ids = [data.id for data in batch]
+#         if not batch:
+#             return {"status":0,"msg":"None of the batches are active"}
+     
+#         get_projects = db.query(StudentProjectDetail).join(
+#             User, User.id == StudentProjectDetail.user_id
+#         ).outerjoin(
+#             Score,
+#             Score.student_project_id == StudentProjectDetail.id
+#         ).filter(User.batch_id.in_(batch_ids),StudentProjectDetail.status == 1,Score.id.is_(None))
+
+#     if course_id:
+#             get_projects = get_projects.filter(User.course_id==course_id)
+        
+#     if task_id:
+#         get_projects = get_projects.filter(StudentProjectDetail.task_id == task_id)
+
+#     get_project_count = get_projects.count()
+#     totalPages,offset,limit = get_pagination(get_project_count,page,size)
+#     get_projects = get_projects.order_by(StudentProjectDetail.id.desc()).limit(limit).offset(offset).all()
+
+#     data_list = []
+
+#     for project in get_projects:
+#         data_list.append({
+#             "id": project.id,
+#             "project_start_date": project.project_start_date.strftime("%Y-%m-%d %H:%M"),
+#             "project_end_date": project.project_end_date.strftime("%Y-%m-%d %H:%M"),
+#             "description": project.description,
+#             "task_id": project.task_id,
+#             "task": project.task.name,
+#             "student_id": project.user_id,
+#             "user_name": project.student.username,
+#             "name": project.student.name.capitalize(),
+#             "project" : f"{settings.BASEURL}/{project.project_url}",
+#             # "course": project.student.course.name if project.student.course else None,
+#             # "course_id": project.task.course ,
+#             "created_at": project.created_at
+#         })
+
+#     data=({"page":page,
+#            "size":size,
+#            "total_page":totalPages,
+#            "total_count":get_project_count,
+#            "items":data_list})
+            
+#     return ({"status":1,"msg":"Success.","data":data})
+
+
 @router.post("/list_student_project")
 async def listStudentProject(
                                 db: Session = Depends(get_db),
                                 token: str = Form(...),
-                                # batch_id: int = Form(None),
                                 course_id: int = Form(None),
                                 task_id: int = Form(None),
                                 page: int = 1,
                                 size: int = 50
 ):
-    user = get_user_token(db,token=token)
+    user = get_user_token(db, token=token)
     if not user:
-        return {"status":0,"msg":"Your login session expires.Please login again."}
-    
+        return {"status": 0, "msg": "Your login session expires. Please login again."}
+
     if user.user_type == 3:
-        get_projects = db.query(StudentProjectDetail).filter(StudentProjectDetail.status==1,StudentProjectDetail.user_id==user.id)
+        get_projects = db.query(StudentProjectDetail).filter(
+            StudentProjectDetail.status == 1,
+            StudentProjectDetail.student_id == user.id
+        )
     else:
-        batch = db.query(Batch).filter(Batch.status==1).all()
+        batch = db.query(Batch).filter(Batch.status == 1).all()
         batch_ids = [data.id for data in batch]
         if not batch:
-            return {"status":0,"msg":"None of the batches are active"}
-     
-        get_projects = db.query(StudentProjectDetail).join(
-            User, User.id == StudentProjectDetail.user_id
-        ).outerjoin(
-            Score,
-            Score.student_project_id == StudentProjectDetail.id
-        ).filter(User.batch_id.in_(batch_ids),StudentProjectDetail.status == 1,Score.id.is_(None))
+            return {"status": 0, "msg": "None of the batches are active"}
 
+        # Join with CourseAssign table to filter by course_id
+        get_projects = db.query(StudentProjectDetail).join(
+            User, User.id == StudentProjectDetail.student_id
+        ).outerjoin(
+            Score, Score.student_project_id == StudentProjectDetail.id
+        ).join(
+            CourseAssign, CourseAssign.user_id == User.id  # Join CourseAssign table
+        ).filter(
+            User.batch_id.in_(batch_ids),
+            StudentProjectDetail.status == 1,
+            Score.id.is_(None)
+        )
+
+    # Filter by course_id if provided
     if course_id:
-            get_projects = get_projects.filter(User.course_id==course_id)
-        
+        get_projects = get_projects.filter(CourseAssign.course_id == course_id,CourseAssign.status==1)
+    
     if task_id:
         get_projects = get_projects.filter(StudentProjectDetail.task_id == task_id)
 
     get_project_count = get_projects.count()
-    totalPages,offset,limit = get_pagination(get_project_count,page,size)
+    totalPages, offset, limit = get_pagination(get_project_count, page, size)
     get_projects = get_projects.order_by(StudentProjectDetail.id.desc()).limit(limit).offset(offset).all()
 
     data_list = []
@@ -90,19 +166,21 @@ async def listStudentProject(
             "student_id": project.user_id,
             "user_name": project.student.username,
             "name": project.student.name.capitalize(),
-            "project" : f"{settings.BASEURL}/{project.project_url}",
-            "course": project.student.course.name if project.student.course else None,
-            # "course_id": project.task.course ,
+            "project": f"{settings.BASEURL}/{project.project_url}",
             "created_at": project.created_at
         })
 
-    data=({"page":page,
-           "size":size,
-           "total_page":totalPages,
-           "total_count":get_project_count,
-           "items":data_list})
-            
-    return ({"status":1,"msg":"Success.","data":data})
+    data = {
+        "page": page,
+        "size": size,
+        "total_page": totalPages,
+        "total_count": get_project_count,
+        "items": data_list
+    }
+
+    return {"status": 1, "msg": "Success.", "data": data}
+
+
 
 @router.post("/update_project")
 async def updateProject(

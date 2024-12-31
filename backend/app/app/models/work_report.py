@@ -15,10 +15,7 @@ class WorkReport(Base):
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
+    created_by = Column(Integer, ForeignKey('user.id'))
     batch = relationship("Batch",back_populates="work_report")
-    user = relationship("User",back_populates="work_report")
-
-
-
-
-
+    trainer = relationship("User",foreign_keys=[trainer_id],back_populates="trainer_work_report")
+    creator = relationship("User",foreign_keys=[created_by],back_populates='creator_work_report')

@@ -16,12 +16,12 @@ router = APIRouter()
 async def createUser(db:Session=Depends(get_db),
                      token:str = Form(...),
                      name:str = Form(...),
-                     user_type:int=Form(...,description=("2>Trainer, 3>Student")),
+                     user_type:int=Form(...,description=("1->admin,2>Trainer, 3>Student")),
                      email:EmailStr=Form(...),
                      phone:str=Form(...),
                      address:str=Form(None),
                      password:str=Form(...),
-                     course_id:int=Form(None),
+                     course_id:str=Form(None,description='if multiple 1,2,3,4,5'),
                      batch_id:int=Form(None)
                      
 ):
@@ -37,8 +37,8 @@ async def createUser(db:Session=Depends(get_db),
     if user_type in [2,3]:
         if not course_id:
             return {"status":0,"msg":"Course required"}
-    if user_type == 3 and batch_id is None:
-        return {"status":0,"msg":"Batch required for student"}
+    # if user_type == 3 and batch_id is None:
+    #     return {"status":0,"msg":"Batch required for student"}
     
     checkUser = db.query(User).filter(User.status==1)
 
@@ -58,10 +58,21 @@ async def createUser(db:Session=Depends(get_db),
                     status =1,
                     address=address,
                     batch_id=batch_id,
-                    course_id=course_id
+                    # course_id=course_id
                     )
     db.add(addUser)
     db.commit()
+    course_ids = course_id.split(',')
+    for course in course_ids:
+        add_course = CourseAssign(
+            user_id = addUser.id,
+            course_id = course,
+            created_by = user.id,
+            created_at = datetime.now(settings.tz_IN),
+            status = 1
+        )
+        db.add(add_course)
+        db.commit()
     return {
         "status" : 1,
         "msg":"User created successfully"
@@ -76,7 +87,7 @@ async def updateUser(
                      email:EmailStr=Form(...),
                      phone:str=Form(...),
                      address:str=Form(None),
-                     course_id:int=Form(None),
+                     course_id:str=Form(None,description='if multiple 1,2,3'),
                      ):
     
     user  = get_user_token(db,token=token)
@@ -88,11 +99,11 @@ async def updateUser(
 
     getUser = checkUser.filter(User.id == userId,User.status==1).first()
 
-    if getUser.user_type == 3 and not course_id:
-        return {"status":0, "msg": "course is required"}
-        
     if not getUser:
         return {"status":0,"msg":"Given user id  not found"}
+        
+    if getUser.user_type == 3 and not course_id:
+        return {"status":0, "msg": "course is required"}
 
     # if username:
     #     if checkUser.filter(User.username == username,User.id!=userId).first():
@@ -101,17 +112,57 @@ async def updateUser(
     if email:
         if checkUser.filter(User.email == email,User.id!=userId).first():
             return {"status":0,"msg":"Given Email is already exist"}
-        getUser.email = email
     if phone:
         if checkUser.filter(User.phone==phone,User.id!=userId).first():
             return {"status":0,"msg":"Given Phone Number is already exist"}
+    getUser.email = email
     getUser.phone =  phone
     getUser.name=name
     getUser.address=address
     getUser.update_at=datetime.now()
-    getUser.course_id=course_id
     db.commit()
-    return {"status":1, "msg":"User details updated successfully"}
+    if course_id:
+        # Convert course_id to a list of integers (split the comma-separated string)
+        course_ids = [int(course) for course in course_id.split(",")]
+
+        # Get all course assignments for the user
+        assigned_courses = db.query(CourseAssign).filter(
+            CourseAssign.user_id == userId
+        ).all()
+
+        # Create a set of course IDs the user should have access to
+        # courses_to_assign = set(course_ids)
+
+        # Handle each assigned course
+        for course_assignment in assigned_courses:
+            if course_assignment.course_id not in course_ids:
+                # If the course is not in the new list, update its status to -1
+                course_assignment.status = -1
+                course_assignment.updated_at = datetime.now(settings.tz_IN)
+                db.commit()
+            else:
+                # If the course is in the new list, ensure it's active
+                if course_assignment.status != 1:
+                    course_assignment.status = 1  # Reactivate course
+                    course_assignment.updated_at = datetime.now(settings.tz_IN)
+                    db.commit()
+
+                # Remove it from the courses_to_assign set (it's already handled)
+                course_ids.remove(course_assignment.course_id)
+
+        # Add new courses that are not already assigned
+        for new_course_id in course_ids:
+            new_course_assign = CourseAssign(
+                user_id=userId,
+                course_id=new_course_id,
+                created_by=user.id,
+                created_at=datetime.now(settings.tz_IN),
+                updated_at=datetime.now(settings.tz_IN),
+                status=1
+            )
+            db.add(new_course_assign)
+            db.commit()
+    return {"status":1, "msg":"User details updated successfully."}
 
 
 
@@ -120,7 +171,7 @@ async def updateUser(
 async def list_user(
                    db:Session=Depends(deps.get_db),
                    token:str=Form(...),
-                   userType:int=Form(...,description="2>Trainer, 3>Student"),
+                   userType:int=Form(...,description="1-> admin 2>Trainer, 3>Student"),
                    user_id: int = Form(None),
                    course_id: int = Form(None),
                    batch_id: int = Form(None),
@@ -147,7 +198,8 @@ async def list_user(
     if batch_id:
         get_user = get_user.filter(User.batch_id==batch_id)
     if course_id:
-        get_user = get_user.filter(User.course_id==course_id)
+        get_user = get_user.join(
+            CourseAssign, CourseAssign.user_id == User.id).filter(CourseAssign.course_id == course_id)
     if user_id:
         get_user = get_user.filter(User.id == user_id)
     if email:
@@ -164,7 +216,14 @@ async def list_user(
     dataList =[]    
     
     for data in get_user:
-
+        course_data = []
+        get_course = db.query(Course).join(CourseAssign,Course.id==CourseAssign.course_id).filter(CourseAssign.user_id==data.id,CourseAssign.status==1).all()
+        if get_course:
+            for course in get_course:
+                course_data.append({
+                    "Course_Id":course.id,
+                    "Course_name":course.name
+                })
         dataList.append({
             "batch_id":batch_id,
             "id":data.id,
@@ -173,9 +232,10 @@ async def list_user(
             "email":data.email,
             "user_type":data.user_type,
             "address":data.address,
-            "course_name":  data.course.name if data.course else None,
-            "course_id": data.course_id,
-            "phone": data.phone
+            # "course_name":  data.course.name if data.course else None,
+            # "course_id": data.course_id,
+            "phone": data.phone,
+            "course":course_data
         })
     data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,
@@ -214,7 +274,14 @@ async def profile(
 
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
-    
+    get_course_details = db.query(Course).join(CourseAssign,CourseAssign.course_id==Course.id
+                        ).filter(CourseAssign.status==1,CourseAssign.user_id==user.id,Course.status==1).all()
+    course_data = []
+    for course in get_course_details:
+        course_data.append({
+            "CourseId":course.id,
+            "CourseName":course.name
+        })
     return {
         "status":1,
         "msg":"Success",
@@ -224,7 +291,7 @@ async def profile(
         "username": user.username,
         "phone": user.phone,
         "address": user.address,
-        "course": user.course.name if user.course_id else None,
+        "course": course_data,
         "batch": user.batch.name if user.batch_id else None,
         "user_type": user.user_type,
         "email": user.email,

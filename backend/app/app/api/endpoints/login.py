@@ -346,6 +346,26 @@ async def resetPassword(db:Session=Depends(deps.get_db),
     else:
         return {"status":-1,"msg":"You cannot change the password at this moment.Please try later."}
     
+@router.post("/captcha_check")
+async def captchaCheck(captcha_token: str = Form(...)):
+    import requests
+    response_data = {"secret": settings.SECRET_KEY, "response": captcha_token}
+ 
+    response = requests.post(
+        "https://www.google.com/recaptcha/api/siteverify", data=response_data
+    )
+ 
+    if response.status_code == 200:
+        response_json = response.json()
+        success = response_json.get("success", False)
+        error_codes = response_json.get("error-codes", [])
+ 
+        if success:
+            return {"status": 1, "msg": "Success"}
+        else:
+            return {"status": 0, "msg": "Captcha failed", "error_codes": error_codes}
+    else:
+        return {"status": 0, "msg": "Captcha validation failed with error"}
 
 # @router.post("/changeUserPassword")
 

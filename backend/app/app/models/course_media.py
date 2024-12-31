@@ -13,7 +13,9 @@ class CourseMedia(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     # ForeignKey
+    created_by = Column(Integer,ForeignKey('user.id'))
     course_material_id = Column(Integer,ForeignKey("course_material.id"))
 
     # relationship
-    course_material = relationship("CourseMaterial",back_populates="documents")
+    course_material = relationship("CourseMaterial",back_populates="course_media")
+    user = relationship("User",back_populates='course_media')

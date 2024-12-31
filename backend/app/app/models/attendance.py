@@ -26,7 +26,7 @@ class Attendance(Base):
     user_id = Column(Integer,ForeignKey("user.id"))
     checkIn_status= Column(TINYINT, comment="1-> chek_in 2 -> check_out")
     users = relationship("User",back_populates="attendance")
-    work_history = relationship("WorkHistory",back_populates="attendance")
+    # work_history = relationship("WorkHistory",back_populates="attendance")
 
     task = relationship("Task",back_populates="attendance")
     task_detail = relationship("TaskDetail",back_populates="attendance")

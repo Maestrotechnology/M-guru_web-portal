@@ -18,11 +18,12 @@ class StudentProjectDetail(Base):
     updated_at = Column(DateTime)
 
     # ForeignKey
+    created_by = Column(Integer,ForeignKey('user.id'))
     task_id = Column(Integer,ForeignKey("task.id"))
-    user_id = Column(Integer,ForeignKey("user.id"))
+    student_id = Column(Integer,ForeignKey("user.id"))
 
     # relationship
     score = relationship("Score", back_populates="project_detail")
     task = relationship("Task", back_populates="project_details")
-    student = relationship("User",back_populates="project_details")
-    
+    student = relationship("User",foreign_keys=[student_id],back_populates="project_details")
+    user = relationship("User", foreign_keys=[created_by], back_populates="project_creator")

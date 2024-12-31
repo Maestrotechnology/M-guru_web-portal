@@ -134,8 +134,8 @@ async def listScore(
                      score_id: int = Form(None),
                      task_id: int = Form(None),
                      student_id: int = Form(...),
-                     page: int = Form(1),
-                     size: int = Form(10)
+                     page:int=1,
+                    size:int=50,
 ):
     user = get_user_token(db,token=token)
     if not user:

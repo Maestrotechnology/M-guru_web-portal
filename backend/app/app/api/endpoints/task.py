@@ -21,7 +21,7 @@ async def createTask(
                       from_date: datetime = Form(None),
                       end_date: datetime = Form(None),
                       description: str = Form(None),
-                      course_id: int = Form(None),
+                      course_id: int = Form(...),
                       batch_id: int = Form(None)
 ):
     user = get_user_token(db,token=token)
@@ -41,7 +41,7 @@ async def createTask(
             description = description,
             created_at=datetime.now(settings.tz_IN),
             updated_at=datetime.now(settings.tz_IN),
-            created_by_user_id=user.id,
+            created_by=user.id,
             course_id = course_id,
             batch_id = batch_id
         )
@@ -57,8 +57,8 @@ async def listTask(
                     task_id: int = Form(None),
                     course_id: int = Form(None),
                     batch_id: int = Form(None),
-                    page: int = Form(1),
-                    size: int = Form(10),
+                    page:int=1,
+                    size:int=50,
 ):
     user = get_user_token(db,token=token)
     if not user:
@@ -66,15 +66,24 @@ async def listTask(
     
 
     get_task = db.query(Task).filter(Task.status == 1)
+    if user.user_type ==2:
+            course = []
+            get_assigned_course = db.query(CourseAssign).filter(CourseAssign.status==1,CourseAssign.user_id==user.id).all()
+            for assigned_course in get_assigned_course:
+                course.append(assigned_course.course_id)
+            get_task = get_task.filter(Task.course_id.in_(course),)
 
     if user.user_type == 3:   
-            # course_id = user.course_id
-            # batch_id = user.batch_id
+            course = []
+            get_assigned_course = db.query(CourseAssign).filter(CourseAssign.status==1,CourseAssign.user_id==user.id).all()
+            for assigned_course in get_assigned_course:
+                course.append(assigned_course.course_id)
             get_task = get_task.filter(
-                or_(and_(Task.course_id == user.course_id,
+                or_(and_(Task.course_id.in_(course),
                 Task.batch_id==user.batch_id),
-                and_(Task.batch_id==user.batch_id,
-                Task.course_id == None))
+                # and_(Task.batch_id==user.batch_id,
+                # Task.course_id == None)
+                )
                 )
 
     if task_id:
@@ -95,11 +104,11 @@ async def listTask(
     for data in get_task:
         data_list.append({
             "id":data.id,
-            "created_by":data.created_by.name.capitalize(),
+            "created_by":data.user.name.capitalize() if data.created_by else None,
             "name":data.name.capitalize(),
             "task_report_url": f"{settings.BASEURL}/{data.task_report_url}" if data.task_report_url else None,
-            "from_date": data.from_date.strftime("%Y-%m-%d %H:%M") if data.from_date else None,
-            "end_date": data.end_date.strftime("%Y-%m-%d %H:%M") if data.end_date else None,
+            "from_date": data.from_date.strftime("%Y-%m-%d %H:%M:%S") if data.from_date else None,
+            "end_date": data.end_date.strftime("%Y-%m-%d %H:%M:%S") if data.end_date else None,
             "description": data.description,
             "course_id": data.course_id,
             "course_name": data.course.name if data.course else None,
@@ -121,7 +130,7 @@ async def updateTask(
                       from_date: datetime = Form(None),
                       end_date: datetime = Form(None),
                       description: str = Form(None),
-                      course_id: int = Form(None),
+                      course_id: int = Form(...),
                       batch_id: int = Form(None) 
 ):
     user = get_user_token(db,token=token)
@@ -135,29 +144,11 @@ async def updateTask(
     if task_report_url:
         file_path, file_url = file_storage(task_report_url, task_report_url.filename)
         get_task.task_report_url = file_url
-    if from_date:
-        get_task.from_date = from_date
-    else:
-        get_task.from_date = None
-
-    if end_date:
-        get_task.end_date = end_date
-    else:
-        get_task.end_date = None
-
-    if description:
-        get_task.description = description
-    else:
-        get_task.description = None
-
-    if course_id:
-        get_task.course_id = course_id
-    else:
-        get_task.course_id = None
-    if batch_id:
-        get_task.batch_id = batch_id
-    else:
-        get_task.batch_id = None
+    get_task.from_date = from_date
+    get_task.end_date = end_date
+    get_task.description = description
+    get_task.course_id = course_id
+    get_task.batch_id = batch_id
     get_task.name = name
 
     db.add(get_task)
@@ -227,7 +218,7 @@ async def listTaskScore(
             "score_id": data.id,
             "student_name": data.student.name.capitalize(),
             "student_username": data.student.username,
-            "course_name": data.student.course.name if data.student.course else None,
+            # "course_name": data.student.course.name if data.student.course else None,
             "student_id": data.student.id,
             "mark": data.mark,
             "description": data.description,
@@ -242,4 +233,3 @@ async def listTaskScore(
                 "total_count":totalCount,
                 "items":data_list})
     return {"status":1,"msg":"Success","data":data}
-    

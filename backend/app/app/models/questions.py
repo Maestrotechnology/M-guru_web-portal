@@ -17,13 +17,15 @@ class Question(Base):
     updated_at = Column(DateTime)
 
     # ForeignKey
+    created_by = Column(Integer, ForeignKey('user.id'))
     question_type_id = Column(Integer, ForeignKey("type_of_question.id"), index=True)
-    set_id = Column(Integer, ForeignKey("set.id"), index=True)
+    set_id = Column(Integer, ForeignKey("question_set.id"), index=True)
     exam_id = Column(Integer, ForeignKey("exam.id"), index= True)
 
     # relationship
     type_of = relationship("TypeOfQuestion",back_populates="questions")
-    set = relationship("Set", back_populates="questions")
+    question_set = relationship("QuestionSet", back_populates="questions")
     exam = relationship("Exam", back_populates="questions")
     options = relationship("Option", back_populates="question")
     exam_details = relationship("StudentExamDetail", back_populates="question")
+    user = relationship('User', back_populates='question')

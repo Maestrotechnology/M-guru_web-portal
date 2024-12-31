@@ -5,9 +5,105 @@ import json
 from sqlalchemy import func
 from app.schemas import *
 from fastapi.encoders import jsonable_encoder 
-
+# import set 
 
 router = APIRouter()
+
+# @router.post("/add_question")
+# async def addQuestions(
+#                         db: Session = Depends(get_db),
+#                         token: str = Form(...),
+#                         question_type_id: int = Form(...,description="1->choose 2->fill in the blank 3->multi choise 4-> paragraph"),
+#                         mark: int = Form(...),
+#                         exam_id: int = Form(...),
+#                         set_id: int = Form(...),
+#                         question_title: str = Form(...),
+#                         options: str = Form(None, description="option1,option2,option3"),
+#                         answers: str = Form(None, description="answer1,answer2,answer3"),
+
+# ):
+#         user=get_user_token(db=db,token=token)
+#         if not user:
+#             return {"status":0,"msg":"Your login session expires.Please login again."}
+#         if user.user_type not in [1,2]:
+#              return {"status":0, "msg":"Access denied"}
+#         get_exam = db.query(Exam).filter(Exam.status==1,Exam.id==exam_id).first()
+#         if not get_exam:
+#             return {"status":0, "msg":"Invaild exam"}
+#         get_question_type = db.query(TypeOfQuestion).filter(TypeOfQuestion.id == question_type_id,TypeOfQuestion.status==1).first()
+#         if not get_question_type:
+#             return {"status":0, "msg":"Invaild question type"}
+#         get_set = db.query(Set).filter(Set.id == set_id, Set.exam_id == exam_id, Set.status == 1).first()
+#         if not get_set:
+#             return {"status":0, "msg":"Invaild set and exam"}
+        
+#         if question_type_id in [1,3] and not options and not answers:
+#              return {"status":0, "msg":"Choose need options and answer"}
+#         create_question = Question(
+#             question_title = question_title,
+#             mark = mark,
+#             question_type_id = question_type_id,
+#             set_id = set_id,
+#             exam_id = exam_id,
+#             status = 1,
+#             no_of_answers = 1,
+#             created_at = datetime.now(settings.tz_IN),
+#             updated_at = datetime.now(settings.tz_IN),
+#             answer = answers if question_type_id == 2 else None
+#         )
+#         db.add(create_question)
+#         db.commit()
+#         if options:
+#             if not answers:
+#                  return{"status":0, "msg":"You entered option but not entered answer"}
+#             get_options = options.split(",")
+#             # get_options = json.loads(options)
+#             for option in get_options:
+#                 create_option = Option(
+#                     name = option,
+#                     answer_status = 2,
+#                     question_id = create_question.id,
+#                     status = 1,
+#                     created_at = datetime.now(settings.tz_IN),
+#                     updated_at = datetime.now(settings.tz_IN)
+#                 )
+#                 print(option)
+#                 db.add(create_option)
+#                 db.commit()
+#         if answers:
+#             if question_type_id!=2:
+#                 get_answers = answers.split(",")
+#                 # get_answers = json.loads(answers)
+#                 print(get_answers)
+#             if question_type_id == 1:
+#                     print(get_answers.get("name"))
+#                     create_option = Option(
+#                             name = get_answers[0],
+#                             answer_status = 1,
+#                             question_id = create_question.id,
+#                             status = 1,
+#                             created_at = datetime.now(settings.tz_IN),
+#                             updated_at = datetime.now(settings.tz_IN)
+#                         )
+#                     db.add(create_option)
+#                     db.commit()
+#             if question_type_id == 3:
+#                     for answer in get_answers:
+#                     # print(answer.get("name"))
+#                         create_option = Option(
+#                                 name = answer,
+#                                 answer_status = 1,
+#                                 question_id = create_question.id,
+#                                 status = 1,
+#                                 created_at = datetime.now(settings.tz_IN),
+#                                 updated_at = datetime.now(settings.tz_IN)
+#                             )
+#                         db.add(create_option)
+#                         db.commit()
+#         return {"status":1, "msg":"Question add successfully"}
+
+
+
 
 @router.post("/update_question")
 async def update_question(*,
@@ -21,6 +117,9 @@ async def update_question(*,
     mark=base["mark"]
     type_of_question=base["type_of"]
     fill_answer=base["fill_answer"]
+    if mark:
+        if not (0 < mark <= 100):
+            return {'status': 0, "msg": "Invalid mark"}
     get_quesion=db.query(Question).filter(Question.id == question_id,Question.status ==1).first()
     if not get_quesion:
          return{"stauts":0, "msg":"Question not found"}
@@ -34,16 +133,27 @@ async def update_question(*,
         get_quesion.mark=mark
     db.commit()
 
-    if type_of_question==1 or type_of_question ==3:
+    if type_of_question==1 or type_of_question ==3:#1->choose 3-> multi options
         
         for data in base["question_information"]:
-            get_option=db.query(Option).filter(Option.id==data["option_id"],Option.status==1).first()
-            if not get_option:
-                 return {"status":0, "msg":"Option not found"}
-            get_option.name = data["answer_name"]
-            get_option.answer_status = data["answer_status"] if data["answer_status"] else 2
-            db.commit()
-            print(get_option.answer_status )
+            if data['is_new']==1:
+                new_option = Option(
+                     name = data["answer_name"],
+                     answer_status = data["answer_status"] if data["answer_status"] else 2,
+                     status =1,
+                     created_at = datetime.now(settings.tz_IN),
+                     question_id = question_id,
+                )
+                db.add(new_option)
+                db.commit()
+            elif data['is_new'] == 0:
+                get_option=db.query(Option).filter(Option.id==data["option_id"],Option.status==1).first()
+                if not get_option:
+                    return {"status":0, "msg":"Option not found"}
+                get_option.name = data["answer_name"]
+                get_option.answer_status = data["answer_status"] if data["answer_status"] else 2
+                db.commit()
+                print(get_option.answer_status )
     
     return ({"status":1,"msg":"Success."})
  
@@ -75,13 +185,12 @@ async def addQuestions(
         get_question_type = db.query(TypeOfQuestion).filter(TypeOfQuestion.id == question_type_id,TypeOfQuestion.status==1).first()
         if not get_question_type:
             return {"status":0, "msg":"Invaild question type"}
-        get_set = db.query(Set).filter(Set.id == set_id, Set.exam_id == exam_id, Set.status == 1).first()
+        get_set = db.query(QuestionSet).filter(QuestionSet.id == set_id, QuestionSet.exam_id == exam_id, QuestionSet.status == 1).first()
         if not get_set:
             return {"status":0, "msg":"Invaild set and exam"}
         
         if question_type_id in [1,3] and not options and not answers:
              return {"status":0, "msg":"Choose need options and answer"}
-        
         create_question = Question(
             question_title = question_title,
             mark = mark,
@@ -96,55 +205,33 @@ async def addQuestions(
         )
         db.add(create_question)
         db.commit()
-        if options:
-            if not answers:
-                 return{"status":0, "msg":"You entered option but not entered answer"}
-            # get_options = options.split(",")
-            get_options = json.loads(options)
-            print(get_options)
-            for option in get_options:
-                create_option = Option(
-                    name = option,
-                    answer_status = 2,
-                    question_id = create_question.id,
-                    status = 1,
-                    created_at = datetime.now(settings.tz_IN),
-                    updated_at = datetime.now(settings.tz_IN)
-                )
-                print(option)
-                db.add(create_option)
-                db.commit()
-        if answers:
-            # get_answers = answers.split(",")
-            if question_type_id!=2:
-                get_answers = json.loads(answers)
-                print(get_answers)
-            if question_type_id == 1:
-                    print(get_answers.get("name"))
+        if question_type_id in [1,3]:
+            if options:
+                if not answers:
+                    return{"status":0, "msg":"You entered option but not entered answer"}
+                # get_options = options.split(",")
+                get_options = json.loads(options)
+                for option in get_options:
                     create_option = Option(
-                            name = get_answers.get("name"),
-                            answer_status = 1,
-                            question_id = create_question.id,
-                            status = 1,
-                            created_at = datetime.now(settings.tz_IN),
-                            updated_at = datetime.now(settings.tz_IN)
-                        )
+                        name = option,
+                        answer_status = 2,
+                        question_id = create_question.id,
+                        status = 1,
+                        created_at = datetime.now(settings.tz_IN),
+                        updated_at = datetime.now(settings.tz_IN)
+                    )
+                    print(option)
                     db.add(create_option)
-            # if question_type_id == 2:
-            #         create_option = Option(
-            #                 name = answers,
-            #                 answer_status = 1,
-            #                 question_id = create_question.id,
-            #                 status = 1,
-            #                 created_at = datetime.now(settings.tz_IN),
-            #                 updated_at = datetime.now(settings.tz_IN)
-            #             )
-            #         db.add(create_option)
-            if question_type_id == 3:
-                    for answer in get_answers:
-                    # print(answer.get("name"))
+                    db.commit()
+            if answers:
+                # get_answers = answers.split(",")
+                if question_type_id!=2:
+                    get_answers = json.loads(answers)
+                    print(get_answers)
+                if question_type_id == 1:
+                        print(get_answers.get("name"))
                         create_option = Option(
-                                name = answer.get("name"),
+                                name = get_answers.get("name"),
                                 answer_status = 1,
                                 question_id = create_question.id,
                                 status = 1,
@@ -152,7 +239,29 @@ async def addQuestions(
                                 updated_at = datetime.now(settings.tz_IN)
                             )
                         db.add(create_option)
-            db.commit()
+                # if question_type_id == 2:
+                #         create_option = Option(
+                #                 name = answers,
+                #                 answer_status = 1,
+                #                 question_id = create_question.id,
+                #                 status = 1,
+                #                 created_at = datetime.now(settings.tz_IN),
+                #                 updated_at = datetime.now(settings.tz_IN)
+                #             )
+                #         db.add(create_option)
+                if question_type_id == 3:
+                        for answer in get_answers:
+                        # print(answer.get("name"))
+                            create_option = Option(
+                                    name = answer.get("name"),
+                                    answer_status = 1,
+                                    question_id = create_question.id,
+                                    status = 1,
+                                    created_at = datetime.now(settings.tz_IN),
+                                    updated_at = datetime.now(settings.tz_IN)
+                                )
+                            db.add(create_option)
+                db.commit()
         return {"status":1, "msg":"Question add successfully"}
 
 @router.post("/list_questions")
@@ -175,7 +284,7 @@ async def listQuestions(
         # if user.user_type not in [1,2]:
         #       return {"status":0, "msg":"Access denied"}
         
-        get_set = db.query(Set).filter(Set.id == set_id,Set.status == 1,Set.exam_id == exam_id).first()
+        get_set = db.query(QuestionSet).filter(QuestionSet.id == set_id,QuestionSet.status == 1,QuestionSet.exam_id == exam_id).first()
         if not get_set:
              return {"status": 0, "msg":"This Set of paper is Not found"}
         get_questions = db.query(Question).filter(

@@ -17,9 +17,10 @@ class Interview(Base):
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)    
-
     # ForeignKey
+    created_by = Column(Integer,ForeignKey('user.id'))
     application_id = Column(Integer, ForeignKey("application_details.id"))
 
     # relationship
     application = relationship("ApplicationDetails", back_populates="interview_details")
+    user = relationship('User', back_populates='interview')

@@ -12,27 +12,6 @@ from app.api.endpoints.email_templetes import get_email_templete
 
 router = APIRouter()
 
-@router.post("/captcha_check")
-async def captchaCheck(captcha_token: str = Form(...)):
-    import requests
- 
-    response_data = {"secret": settings.SECRET_KEY, "response": captcha_token}
- 
-    response = requests.post(
-        "https://www.google.com/recaptcha/api/siteverify", data=response_data
-    )
- 
-    if response.status_code == 200:
-        response_json = response.json()
-        success = response_json.get("success", False)
-        error_codes = response_json.get("error-codes", [])
- 
-        if success:
-            return {"status": 1, "msg": "Success"}
-        else:
-            return {"status": 0, "msg": "Captcha failed", "error_codes": error_codes}
-    else:
-        return {"status": 0, "msg": "Captcha validation failed with error"}
 
 @router.post("/create_application")
 async def createApplication(*,
@@ -45,7 +24,7 @@ async def createApplication(*,
                             qualification: Annotated[str, Form(...)],
                             passed_out_year: Annotated[str, Form(...)],
                             enquiry_id: Annotated[int, Form(...)],
-                            course_id: Annotated[int, Form(...)]
+                            course_id: Annotated[int, Form()] = None
 ):
     # user = get_user_token(db=db,token=token)
     # if not user:
@@ -61,9 +40,10 @@ async def createApplication(*,
     check_enquiry_id = db.query(EnquiryType).filter(EnquiryType.id == enquiry_id).first()
     if not check_enquiry_id:
         return {"status":0, "msg":"Invalid enquiry type"}
-    check_course_id = db.query(Course).filter(Course.id == course_id).first()
-    if not check_course_id:
-        return {"status":0, "msg":"Invalid course"}
+    if course_id:
+        check_course_id = db.query(Course).filter(Course.id == course_id).first()
+        if not check_course_id:
+            return {"status":0, "msg":"Invalid course"}
     
     if resume: 
         file_path, file_url = file_storage(resume, resume.filename)
@@ -89,7 +69,7 @@ async def updateApplication(*,
                             qualification: Annotated[str, Form(...)],
                             passed_out_year: Annotated[str, Form(...)],
                             enquiry_id: Annotated[int, Form(...)],
-                            course_id: Annotated[int, Form(...)]
+                            course_id: Annotated[int, Form()] = None
 ):
     user = get_user_token(db=db,token=token)
     if not user:
@@ -102,7 +82,7 @@ async def updateApplication(*,
                                                         ApplicationDetails.status == 1
                                                         ).first()
     if not db_application:
-        return {"status":0, "msg":"Invalid application"}
+        return {"status":0, "msg":"Application Not found"}
     
     # get_applications = db.query(ApplicationDetails).filter(ApplicationDetails.id!=application_id,ApplicationDetails.status==1,ApplicationDetails.email==email).first()
     # if get_applications:
@@ -114,9 +94,10 @@ async def updateApplication(*,
     check_enquiry_id = db.query(EnquiryType).filter(EnquiryType.id == enquiry_id).first()
     if not check_enquiry_id:
         return {"status":0, "msg":"Invalid enquiry type"}
-    check_course_id = db.query(Course).filter(Course.id == course_id).first()
-    if not check_course_id:
-        return {"status":0, "msg":"Invalid course"}
+    if course_id:
+        check_course_id = db.query(Course).filter(Course.id == course_id).first()
+        if not check_course_id:
+            return {"status":0, "msg":"Invalid course"}
     if resume: 
         file_path, file_url = file_storage(resume, resume.filename)
         db_application.resume = file_url
@@ -146,8 +127,8 @@ async def listApplication(*,
                             enquiry_id: Annotated[int, Form()] = None,
                             from_date: Annotated[date , Form()] = None,
                             to_date: Annotated[date, Form()] = None,
-                            page: Annotated[int, Form()] = 1,
-                            size: Annotated[int, Form()] = 10,
+                            page: int = 1,
+                            size: int = 50
 
 ):
     print(from_date)
@@ -246,7 +227,7 @@ async def listApplication(*,
                 "passed_out_year":application.passed_out_year,
                 "application_data":application.created_at,
                 "course_id": application.course_id,
-                "course_name": application.courses.name if application.courses else None,  
+                "course_name": application.courses.name if application.course_id and application.courses else None,  
                 "enquiry_id": application.enquiry_id,
                 "enquiry_name": application.enquires.name if application.enquires else None,
                 "scholarship": application.scholarship,

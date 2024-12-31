@@ -81,19 +81,28 @@ async def listCourseMaterials(
 
     data_list = []
     for data in get_course_materials:
+        get_batch = db.query(MaterialAccess).filter(MaterialAccess.status==1,MaterialAccess.course_material_id==data.id).all()
+        batch_list = []
+        for batch in get_batch:
+            batch_list.append({
+                "id":batch.batch_id,
+                "batch_name":batch.batch.name if batch.batch_id else None,
+            })
         data_list.append({
             "id": data.id,
             "name": data.name.capitalize(),
             "description": data.description,
             "course_id": data.course_id,
             "course_name": data.course.name,
-            "created_by": data.created_by.name,
+            "created_by": data.user.name if data.created_by and data.user.name else None,
             "batch_id": data.batch_id,
-            "batch": data.batch.name if data.batch else None,
+            "batch": batch_list,
             "created_at": data.created_at.strftime("%d-%m-%Y"),
             "updated_at": data.updated_at.strftime("%d-%m-%Y"),
-            "documents": [{"id": doc.id, "url": f"{settings.BASEURL}/{doc.file_url}"} for doc in data.documents] if data.documents else None
-
+            "documents": [
+                            {"id": doc.id, "url": f"{settings.BASEURL}/{doc.file_url}"}
+                            for doc in data.course_media if doc.status == 1
+                        ] if data.course_media else None,
         })           
     data=({"page":page,
            "size":size,
@@ -112,22 +121,68 @@ async def updateCourseMaterials(
                                 description: str = Form(None),
                                 name: str = Form(),
                                 list_material: list[UploadFile] = File(None),
-                                batch_id: int = Form(None),
+                                batch_ids: str = Form(None,description='if multiple 1,2,3,4,5'),
                                 # deleted_material_ids: str = Form(None)
 ):
     user = get_user_token(db=db,token=token)
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
+    if user.user_type not in [1,2]:
+        return {"status":0,"msg":"Access denied"}
     
     get_course_material = db.query(CourseMaterial).filter(CourseMaterial.id==course_material_id,CourseMaterial.status==1).first()
     if not get_course_material:
         return {"status":0,"msg":"Material not found"}
     
-    if batch_id:
-        get_course_material.batch_id = batch_id
+    if batch_ids:
+        batch_ids_list = [int(batch_id) for batch_id in batch_ids.split(",")]
 
-    if user.user_type not in [1,2]:
-        return {"status":0,"msg":"Access denied"}
+        # Get all material access records related to the given course material
+        material_access_records = db.query(MaterialAccess).filter(
+            MaterialAccess.course_material_id == course_material_id
+        ).all()
+
+        # Step 1: Update the existing records for batches in the batch_ids list
+        for record in material_access_records:
+            if record.batch_id in batch_ids_list:
+                # If the batch_id is in the batch_ids_list, ensure the status is active (1)
+                if record.status != 1:
+                    record.status = 1  # Reactivate the record
+                    record.updated_at = datetime.now()  # Update timestamp
+                batch_ids_list.remove(record.batch_id)  # "Pop" or remove this batch_id from the list
+            else:
+                # If the batch_id is not in the batch_ids_list, set the status to -1 (inactive)
+                if record.status != -1:
+                    record.status = -1  # Deactivate the record
+                    record.updated_at = datetime.now()  # Update timestamp
+
+            db.commit()  # Commit each record after updating
+
+        # Step 2: Now, handle the remaining batch_ids that don't have a corresponding record yet
+        for batch_id in batch_ids_list:
+            # Check if a MaterialAccess record for this batch and course material already exists
+            existing_record = db.query(MaterialAccess).filter(
+                MaterialAccess.course_material_id == course_material_id,
+                MaterialAccess.batch_id == batch_id
+            ).first()
+
+            if not existing_record:
+                # Create a new MaterialAccess record for this batch if not already exists
+                new_access_record = MaterialAccess(
+                    batch_id=batch_id,
+                    course_id=course_id,  # Assuming you want to associate this course as well
+                    course_material_id=course_material_id,
+                    created_by=user.id,  # The user who is making the update
+                    created_at=datetime.now(),
+                    updated_at=datetime.now(),
+                    status=1  # Active status for new batches
+                )
+
+                # Add and commit the new access record
+                db.add(new_access_record)
+                db.commit() 
+        
+
     # if deleted_material_ids:
     #     deleted_material_ids = deleted_material_ids.split(",")
         

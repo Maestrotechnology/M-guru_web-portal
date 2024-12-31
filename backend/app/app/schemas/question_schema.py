@@ -3,9 +3,10 @@ from pydantic import BaseModel
 
 
 class QuestionDetail(BaseModel):
-    option_id: int
+    option_id: Optional[int] = None
     answer_name: str
     answer_status:int
+    is_new : int
 
 class UpdateQuestion(BaseModel):
     

@@ -15,7 +15,9 @@ class Option(Base):
     updated_at = Column(DateTime)
 
     # ForeignKey
+    created_by = Column(Integer,ForeignKey("user.id"))
     question_id = Column(Integer, ForeignKey("question.id"),index=True)
 
     # relationship
     question = relationship("Question", back_populates="options")
+    user = relationship("User", back_populates="options") 

@@ -20,6 +20,7 @@ class ApplicationDetails(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     # ForeignKey
+    created_by = Column(Integer, ForeignKey('user.id'))
     enquiry_id = Column(Integer, ForeignKey("enquiry_type.id"))
     course_id = Column(Integer, ForeignKey("course.id"))
     batch_id = Column(Integer, ForeignKey("batch.id"))
@@ -29,3 +30,4 @@ class ApplicationDetails(Base):
     courses = relationship("Course", back_populates="applications")
     interview_details = relationship("Interview", back_populates="application",uselist=False)
     batch = relationship("Batch",back_populates="applications",uselist=False)
+    user = relationship('User',back_populates='application_details')

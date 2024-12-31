@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
-from sqlalchemy import Date,cast
+from sqlalchemy import Date,cast,func
 
 from app.models import ApiTokens,User
 from app.api import deps
@@ -90,7 +90,7 @@ async def checK_in(
             get_Attendance.check_out=datetime.now(settings.tz_IN)
             get_Attendance.checkIn_status=2
             db.commit()
-            return {"status":1,"msg":"check out sucessfully"}
+            return {"status":1,"msg":"check out successfully"}
     
     else:
         return {'status':-1,"msg":"Your login session expires.Please login later."}
@@ -107,7 +107,8 @@ async def add_task(
     mentor_time:time=Form(None),
     trainer_id:str=Form(None),
     rating:str=Form(None),
-    description:str=Form(None)
+    task_description:str=Form(...),
+    mentor_description:str=Form(None),
 ):
     user = deps.get_user_token(db=db, token=token)
     if user:
@@ -126,7 +127,8 @@ async def add_task(
         addTaskDetail = TaskDetail(
                 attendance_id=Attendance_id,
                 task=task,
-                description=description,
+                task_description=task_description,
+                mentor_description = mentor_description,
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
                 mentor_time=mentor_time,
@@ -137,7 +139,7 @@ async def add_task(
             )
         db.add(addTaskDetail)
         db.commit()
-        return {"status":1,"msg":"Task Added Sucessfully"}
+        return {"status":1,"msg":"Task Added Successfully"}
     
     else:
         return {'status':-1,"msg":"Your login session expires.Please login later."}
@@ -148,17 +150,26 @@ async def list_task_detail(
                     db: Session = Depends(get_db),
                     token: str = Form(...),
                     user_id:int=Form(None),
+                    from_date : date = Form(None),
+                    to_date : date = Form(None),
                     page: int = 1,
                     size: int = 10
 ):
     user = get_user_token(db,token=token)
     if user:
+        today = datetime.now(settings.tz_IN)
+        today_date = today.date()
         get_taskDetail=db.query(TaskDetail).filter(TaskDetail.status==1).order_by(TaskDetail.id.desc())
         if user.user_type==3:
-            get_taskDetail=get_taskDetail.filter(TaskDetail.user_id==user.id)
+            get_taskDetail=get_taskDetail.filter(TaskDetail.student_id==user.id)
         else:
-            get_taskDetail=get_taskDetail.filter(TaskDetail.user_id==user_id)
-
+            get_taskDetail=get_taskDetail.filter(TaskDetail.student_id==user_id)
+        if from_date or to_date:
+            if not from_date:
+                from_date = today_date.replace(month=1,day=1)
+            if not to_date:
+                to_date = today_date
+            get_taskDetail = get_taskDetail.filter(func.date(TaskDetail.created_at).between(from_date,to_date))
         totalCount= get_taskDetail.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         get_taskDetail=get_taskDetail.limit(limit).offset(offset).all()
@@ -168,13 +179,14 @@ async def list_task_detail(
             data_list.append({
                 "TaskDetail_id":data.id,
                 "attendance_id":data.attendance_id,
-                "user_id":data.user_id,
-                "user_name":data.user.username,
+                "user_id":data.student_id,
+                "user_name":data.student.username,
                 "task":data.task,
                 "expected_time":data.expected_time,
                 "trainer_id":data.trainer_id,
                 "date":data.created_at.strftime("%d-%m-%Y"),
-                "trainer_name":data.users.username if data.trainer_id!=None else None
+                "trainer_name":data.trainer.username if data.trainer_id!=None else None,
+                "task_description":data.task_description,
             })
         data=({"page":page,"size":size,"total_page":total_page,
                     "total_count":totalCount,
@@ -288,7 +300,7 @@ async def list_trainer_rating(
                 "name":data.user.name.capitalize(),
                 "user_name":data.user.username,
                 "task":data.task,
-                "description":data.description,
+                "description":data.mentor_description,
                 "expected_time":data.expected_time,
                 "trainer_id":data.trainer_id,
                 "trainer_name":data.users.username if data.trainer_id!=None else None,
@@ -369,14 +381,19 @@ async def list_trainer_work(
 ):
     user = get_user_token(db,token=token)
     if user:
+        today = datetime.now(settings.tz_IN)
         get_WorkReport=db.query(WorkReport).filter(WorkReport.status==1).order_by(WorkReport.id.desc())
         if user.user_type==1:
             if trainer_id:
                 get_WorkReport = get_WorkReport.filter(WorkReport.trainer_id == trainer_id )
         if user.user_type==2:
                 get_WorkReport = get_WorkReport.filter(WorkReport.trainer_id == user.id )
-        if from_date and to_date:
-            get_WorkReport = get_WorkReport.filter(WorkReport.date >= from_date ,TaskDetail.date <= to_date)      
+        if from_date or to_date:
+            if not from_date:
+                from_date = today.date().replace(day=1,month=1)
+            if not  to_date:
+                to_date=today.date()
+            get_WorkReport = get_WorkReport.filter(WorkReport.date >= from_date ,WorkReport.date  <= to_date)      
         totalCount= get_WorkReport.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         get_WorkReport=get_WorkReport.limit(limit).offset(offset).all()
@@ -386,7 +403,7 @@ async def list_trainer_work(
             data_list.append({
                 "WorkReport_id":data.id,
                 "trainer_id":data.trainer_id,
-                "trainer_name":data.user.name.capitalize(),
+                "trainer_name":data.trainer.name.capitalize() if data.trainer_id else None ,
                 "date":data.date.date(),
                 "batch_id":data.batch_id,
                 "batch_name":data.batch.name,

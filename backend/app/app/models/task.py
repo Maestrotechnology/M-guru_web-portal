@@ -18,11 +18,11 @@ class Task(Base):
     # ForeignKey
     course_id = Column(Integer, ForeignKey("course.id"))
     batch_id = Column(Integer, ForeignKey("batch.id"))
-    created_by_user_id = Column(Integer, ForeignKey("user.id"))
+    created_by = Column(Integer, ForeignKey("user.id"))
     # relationship
     course = relationship("Course",back_populates="task")
     batch = relationship("Batch",back_populates="task")
-    created_by = relationship("User",back_populates="created_task")
+    user = relationship("User",back_populates="task")
     attendance = relationship("Attendance",back_populates="task")
    
     scores = relationship("Score",back_populates="task")
