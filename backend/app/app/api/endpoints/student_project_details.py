@@ -22,16 +22,22 @@ async def uploadProject(
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
     file_path, file_url = file_storage(project_url, project_url.filename)
+    check_task_detail = db.query(StudentProjectDetail).filter(StudentProjectDetail.task_id==task_id,
+                            StudentProjectDetail.student_id==user.id,StudentProjectDetail.status==1).first()
+    if check_task_detail:
+        return {"status":0,"msg":"You have already submitted the file"}
     create_project = StudentProjectDetail(
         project_start_date = project_start_date,
         project_end_date = project_end_date,
         description = description,
         task_id = task_id,
-        user_id = user.id,
+        student_id = user.id,
         project_url = file_url,
         created_at = datetime.now(settings.tz_IN),
-        updated_at = datetime.now(settings.tz_IN),
-        status = 1
+        # updated_at = datetime.now(settings.tz_IN),
+        status = 1,
+        created_by = user.id,
+        is_marked =0,
     )
     db.add(create_project)
     db.commit()
@@ -134,14 +140,15 @@ async def listStudentProject(
             User, User.id == StudentProjectDetail.student_id
         ).outerjoin(
             Score, Score.student_project_id == StudentProjectDetail.id
-        ).join(
-            CourseAssign, CourseAssign.user_id == User.id  # Join CourseAssign table
         ).filter(
             User.batch_id.in_(batch_ids),
             StudentProjectDetail.status == 1,
             Score.id.is_(None)
-        )
-
+        ).distinct(StudentProjectDetail.id)
+    if user.user_type==2:
+        get_projects=get_projects.join(
+            CourseAssign, CourseAssign.user_id == User.id  # Join CourseAssign table
+        ).filter(CourseAssign.status==1)
     # Filter by course_id if provided
     if course_id:
         get_projects = get_projects.filter(CourseAssign.course_id == course_id,CourseAssign.status==1)
@@ -163,11 +170,12 @@ async def listStudentProject(
             "description": project.description,
             "task_id": project.task_id,
             "task": project.task.name,
-            "student_id": project.user_id,
+            "student_id": project.student_id,
             "user_name": project.student.username,
             "name": project.student.name.capitalize(),
             "project": f"{settings.BASEURL}/{project.project_url}",
-            "created_at": project.created_at
+            "created_at": project.created_at,
+            "updated_at":project.updated_at,
         })
 
     data = {
@@ -203,6 +211,9 @@ async def updateProject(
 
     if not get_project:
         return {"status":0,"msg":"Project not found"}
+    if user.user_type ==3:
+        if get_project.is_marked ==1:
+            return {"status":0,"msg":"project has already been marked and cannot be edited."}
     if project_url:
         file_path, file_url = file_storage(project_url, project_url.filename)
         get_project.project_url=file_url

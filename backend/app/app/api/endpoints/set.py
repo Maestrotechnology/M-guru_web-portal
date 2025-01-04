@@ -27,7 +27,8 @@ async def createSet(
               exam_id = exam_id,
               status = 1,
               created_at = datetime.now(settings.tz_IN),
-              updated_at = datetime.now(settings.tz_IN)
+              updated_at = datetime.now(settings.tz_IN),
+              created_by = user.id
         )
         db.add(create_set)
         db.commit()
@@ -68,6 +69,7 @@ async def listSet(
                     "set_name":row.name.capitalize(),
                     "exam_id":row.exam_id,
                     "created_at":row.created_at,
+                    "created_by":row.user.name if row.created_by else None,
                     "no_of_questions":len([question for question in row.questions if question.status == 1]) if row.questions else None,
                     "total": sum(question.mark for question in row.questions if question.status == 1) if row.questions else None
                 })

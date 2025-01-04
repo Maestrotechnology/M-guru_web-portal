@@ -77,7 +77,6 @@ router = APIRouter()
 #         application_Month=application.filter(ApplicationDetails.created_at.between(fromDateTime,toDatetime)).all()
 #         aaa=db.query(ApplicationDetails).filter(func.date(ApplicationDetails.created_at)==today.date()).count()
         
-#         print(aaa,11111)
 #         application_today=application.filter(func.date(ApplicationDetails.created_at)==today.date()).all()
 
 #         application_data_month=[]
@@ -135,13 +134,11 @@ async def dashboard(
             fromDateTime = fromDateTime.replace(hour=0, minute=0, second=0)
         else:
             fromDateTime = today.replace(day=1,hour=0, minute=0, second=0)
-            print(fromDateTime)
 
         if toDatetime:
             toDatetime = toDatetime.replace(hour=23, minute=59, second=59)
         else:
             toDatetime = today.replace(hour=23, minute=59, second=59)
-            print(toDatetime)
 
 
         get_enquiry__today = db.query(EnquiryType.id,EnquiryType.name,func.count(ApplicationDetails.id).label("application_count")).join(

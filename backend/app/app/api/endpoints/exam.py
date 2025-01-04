@@ -54,17 +54,19 @@ async def listExam(
         if user.user_type not in [1,2]:
               return {"status":0, "msg":"Access denied"}
         get_exam = db.query(Exam).filter(Exam.status == 1)
+        if user.user_type==2:
+              get_exam = get_exam.join(CourseAssign,CourseAssign.user_id==user.id).filter(CourseAssign.status==1,Exam.course_id==CourseAssign.course_id)
         if exam_id:
               get_exam = get_exam.filter(Exam.id == exam_id)
         if name:
               get_exam = get_exam.filter(Exam.name.ilike(f"%{name}%"))
-
+      
         get_exam = get_exam.order_by(Exam.name)
         totalCount= get_exam.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         get_exam=get_exam.limit(limit).offset(offset).all()
         dataList =[]
-    
+      
         for row in get_exam:
                 set_counts = db.query(QuestionSet).filter(QuestionSet.status ==1,QuestionSet.exam_id==row.id).count()
                 dataList.append({
@@ -159,15 +161,14 @@ async def assignExam(
         """
         # check exam has paper
         get_set_ids = []
-        if not get_exam.sets:
+        if not get_exam.question_set:
               return {"status":0, "msg":"There is no question paper for this specific Exam"}
         
-        for set in get_exam.sets:
+        for set in get_exam.question_set:
               if set.status ==1:
                   get_set_ids.append(set.id)
         # Get total for all set of papers
         sumof_all_paper_marks = db.query(func.sum(Question.mark)).filter(Question.set_id.in_(get_set_ids),Question.status==1).group_by(Question.set_id).all()
-        print(sumof_all_paper_marks,get_set_ids)
         if len(sumof_all_paper_marks) != len(get_set_ids):
               return {"status":0, "msg":"Some set of paper has no questions"}
         # convert decimal to int
@@ -196,7 +197,8 @@ async def assignExam(
                     set_id = random.choice(get_set_ids),
                     status = 1,
                     created_at = datetime.now(settings.tz_IN),
-                    updated_at = datetime.now(settings.tz_IN)
+                    updated_at = datetime.now(settings.tz_IN),
+                    assigned_by = user.id,
               )
               db.add(assign)
         db.commit()
@@ -238,7 +240,6 @@ async def listStudentExam(
                   AssignExam.student_id == user.id,
                   StudentExamDetail.assign_exam_id == None
                   )
-            print(get_assigned_details.count(),1111111111)
       # if batch_id:
       if student_id:
             get_assigned_details = get_assigned_details.filter(
@@ -248,17 +249,12 @@ async def listStudentExam(
             get_assigned_details = get_assigned_details.filter(
                   AssignExam.exam_id == exam_id
             )
-      print("-----------------------------")
-      print(course_id)
-      print(get_assigned_details.count(),22222222)
 
       if course_id:
             get_assigned_details = get_assigned_details.filter(
                   AssignExam.course_id == course_id
             )
-            print(get_assigned_details.count())
       totalCount= get_assigned_details.count()
-      print(get_assigned_details.count(),33333333)
       total_page,offset,limit=get_pagination(totalCount,page,size)
       get_assigned_details=get_assigned_details.order_by(AssignExam.id.desc()).limit(limit).offset(offset).all()
       dataList =[]
@@ -333,7 +329,6 @@ async def answer(
                   else:
                         option = option + "," + str(i)
       scored_mark = 0
-      print(answer_id,"----")
       if type_id==2:
             if answer.strip().lower() == get_question.answer.strip().lower():
                   scored_mark = get_question_mark
@@ -342,10 +337,8 @@ async def answer(
             get_answer_ids = [option.id for option in get_answers]
             if sorted(answer_id) == sorted(get_answer_ids):
                   scored_mark = get_question_mark
-      print(question_id,assigned_id)
 
       check_question_attened = db.query(StudentExamDetail).filter(StudentExamDetail.question_id==question_id,StudentExamDetail.assign_exam_id == assigned_id,StudentExamDetail.status ==1).first()
-      print(check_question_attened)
       if check_question_attened:
             if type_id == 2:
                   check_question_attened.answer = answer
@@ -368,7 +361,8 @@ async def answer(
                         assign_exam_id=assigned_id,
                         status=1,
                         created_at=datetime.now(),
-                        mark=scored_mark
+                        mark=scored_mark,
+                        created_by = user.id
                         )
             db.add(add_new)
       db.commit()
@@ -376,7 +370,6 @@ async def answer(
 
 
       # # get_total = db.query(func.sum(StudentExamDetail.mark)).group_by(StudentExamDetail.assign_exam_id).scalar()
-      # # print(get_total,"score")
       # return {"status":1,"msg":"Success"}
 
 @router.post("/view_answer")
@@ -464,7 +457,6 @@ async def attendedQuestion(
 #             return {"status":0, "msg":"Invaild details"}
 #       get_question = db.query(Question).filter(Question.status==1,Question.set_id==get_assigned_details.set_id)
 #       total_mark_for_set = sum(question.mark for question in get_set.questions)
-#       print(total_mark_for_set)
 
 #       totalCount= get_student_details.count()
 #       total_page,offset,limit=get_pagination(totalCount,page,size)
@@ -514,7 +506,7 @@ async def getStudentExamDetails(
 ):
     user = get_user_token(db=db, token=token)
     if not user:
-        return {"status": 0, "msg": "Your login session expired. Please login again."}
+        return {"status": -1, "msg": "Your login session expired. Please login again."}
     if user.user_type not in [1, 2]:
         return {"status": 0, "msg": "Access denied"}
 
@@ -557,8 +549,8 @@ async def getStudentExamDetails(
 
             # Check for correct answers
             if answered_question.option_ids:
-                options = [int(option) for option in answered_question.option_ids.split(",")]
-                get_options = db.query(Option).filter(Option.id.in_(options)).all()
+            #     options = [int(option) for option in answered_question.option_ids.split(",")]
+                get_options = db.query(Option).filter(Option.question_id==answered_question.question_id,Option.status==1).all()
                 correct_answer = [option.name for option in get_options if option.answer_status == 1]
             elif question.question_type_id in [1, 3]:
                 # For single choice or multi-choice questions
@@ -567,13 +559,12 @@ async def getStudentExamDetails(
             elif question.question_type_id == 2:
                 # For free text questions
                 correct_answer.append(question.answer)
-        print(correct_answer)
         # Add question and its related data to the response list
         data_list.append({
             "student_exam_detail_id": answered_question.id if answered_question else None,
             "type_id": question.question_type_id,
             "question": question.question_title,
-            "options": [title.name for title in db.query(Option).filter(Option.question_id == question.id).all()] if answered_question else None,
+            "options": [title.name for title in db.query(Option).filter(Option.question_id == question.id,Option.status==1).all()] if answered_question else None,
             "answer": student_answer,
             "actual_mark": student_answer_mark,
             "question_mark": question.mark,

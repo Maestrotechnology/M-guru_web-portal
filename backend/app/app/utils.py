@@ -35,7 +35,6 @@ def get_timer(data):
 #     password = "ycjanameheveewtb"
 
 #     msg = message
-#     print(msg)
 #     server = smtplib.SMTP("smtp.gmail.com", 587)
 #     server.ehlo()
 #     server.starttls()
@@ -56,7 +55,6 @@ async def send_mail(receiver_email,subject,message):  # Demo
     msg["Subject"] = subject
  
     # msg = str(message)
-    print(msg)
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
         server.starttls()
         server.login(sender_email, password)
@@ -97,9 +95,7 @@ def file_storage(file_name, f_name):
     files_name = f_name.split(".")
     
     save_full_path = f'{output_dir}{files_name[0]}{dt}.{txt1}'
-    print()
     file_exe = f"m-guru/{files_name[0]}{dt}.{txt1}"
-    # print(file_exe)
     with open(save_full_path, "wb") as buffer:
         shutil.copyfileobj(file_name.file, buffer)
 

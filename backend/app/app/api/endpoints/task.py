@@ -22,7 +22,6 @@ async def createTask(
                       end_date: datetime = Form(None),
                       description: str = Form(None),
                       course_id: int = Form(...),
-                      batch_id: int = Form(None)
 ):
     user = get_user_token(db,token=token)
     if not user:
@@ -43,7 +42,6 @@ async def createTask(
             updated_at=datetime.now(settings.tz_IN),
             created_by=user.id,
             course_id = course_id,
-            batch_id = batch_id
         )
     db.add(task)
     db.commit()
@@ -56,7 +54,7 @@ async def listTask(
                     name: str = Form(None),
                     task_id: int = Form(None),
                     course_id: int = Form(None),
-                    batch_id: int = Form(None),
+                    # batch_id: int = Form(None),
                     page:int=1,
                     size:int=50,
 ):
@@ -71,20 +69,18 @@ async def listTask(
             get_assigned_course = db.query(CourseAssign).filter(CourseAssign.status==1,CourseAssign.user_id==user.id).all()
             for assigned_course in get_assigned_course:
                 course.append(assigned_course.course_id)
-            get_task = get_task.filter(Task.course_id.in_(course),)
+            get_task = get_task.filter(Task.course_id.in_(course)).distinct(Task.id)
 
     if user.user_type == 3:   
             course = []
             get_assigned_course = db.query(CourseAssign).filter(CourseAssign.status==1,CourseAssign.user_id==user.id).all()
             for assigned_course in get_assigned_course:
                 course.append(assigned_course.course_id)
-            get_task = get_task.filter(
-                or_(and_(Task.course_id.in_(course),
-                Task.batch_id==user.batch_id),
+            get_task = get_task.join(TaskAssign,TaskAssign.batch_id==user.batch_id).filter(
+                Task.course_id.in_(course),TaskAssign.status ==1
                 # and_(Task.batch_id==user.batch_id,
                 # Task.course_id == None)
-                )
-                )
+                ).distinct(Task.id)
 
     if task_id:
         get_task = get_task.filter(Task.id == task_id)
@@ -92,8 +88,8 @@ async def listTask(
         get_task = get_task.filter(Task.name.like(f"%{name}%"))
     if course_id:
         get_task = get_task.filter(Task.course_id == course_id)
-    if batch_id:
-        get_task = get_task.filter(Task.batch_id == batch_id)
+    # if batch_id:
+    #     get_task = get_task.filter(Task.batch_id == batch_id)
 
     get_task = get_task.order_by(Task.name)
     totalCount= get_task.count()
@@ -102,6 +98,14 @@ async def listTask(
 
     data_list = []
     for data in get_task:
+        batch_list = []
+        get_all_batch = db.query(Batch).join(TaskAssign,TaskAssign.batch_id==Batch.id).filter(TaskAssign.status==1,TaskAssign.task_id==data.id, Batch.status==1).all()
+        if get_all_batch:
+            for batch in get_all_batch:
+                batch_list.append({
+                    "Batch_Id":batch.id,
+                    "Batch_name":batch.name
+                })
         data_list.append({
             "id":data.id,
             "created_by":data.user.name.capitalize() if data.created_by else None,
@@ -112,8 +116,8 @@ async def listTask(
             "description": data.description,
             "course_id": data.course_id,
             "course_name": data.course.name if data.course else None,
-            "batch_id": data.batch_id,
-            "batch_name": data.batch.name if data.batch else None
+            "batch": batch_list,
+            # "batch_name": data.batch.name if data.batch else None
         })
     data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,
@@ -131,7 +135,7 @@ async def updateTask(
                       end_date: datetime = Form(None),
                       description: str = Form(None),
                       course_id: int = Form(...),
-                      batch_id: int = Form(None) 
+                    #   batch_id: str = Form(None,description="if multiple -> 1,2,3,4,5") 
 ):
     user = get_user_token(db,token=token)
     if not user:
@@ -148,8 +152,8 @@ async def updateTask(
     get_task.end_date = end_date
     get_task.description = description
     get_task.course_id = course_id
-    get_task.batch_id = batch_id
     get_task.name = name
+
 
     db.add(get_task)
     db.commit()
@@ -233,3 +237,42 @@ async def listTaskScore(
                 "total_count":totalCount,
                 "items":data_list})
     return {"status":1,"msg":"Success","data":data}
+
+@router.post("/assign_task")
+async def assignTask(db: Session = Depends(get_db),
+                        token: str = Form(...),
+                        task_id: int = Form(...),
+                        batch_ids:str=Form(...,description="if multiple 1,2,3,4,5,6")
+):
+    user = get_user_token(db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    check_task = db.query(Task).filter(Task.id == task_id,Task.status==1).first()
+    if not check_task:
+        return {"status":0,"msg":"Task not found."}
+    batch_id = [int(batch) for batch in batch_ids.split(",")]
+    assigned_batch = db.query(TaskAssign).filter(TaskAssign.task_id==task_id).all()
+    
+    for batch in assigned_batch:
+        if batch.batch_id not in batch_id:
+            batch.status=-1
+            batch.update_at = datetime.now(settings.tz_IN)
+            db.commit()
+        else:
+            if batch.status !=1:
+                batch.status =1
+                batch.update_at = datetime.now(settings.tz_IN)
+                db.commit()
+            batch_id.remove(batch.batch_id)
+    
+    for batch in batch_id:
+        new_batch_assign = TaskAssign(
+            task_id = task_id,
+            batch_id = batch,
+            created_by = user.id,
+            created_at = datetime.now(settings.tz_IN),
+            status=1
+        )
+        db.add(new_batch_assign)
+        db.commit()
+    return {"status":1,"msg":"Assigned Successfully"}

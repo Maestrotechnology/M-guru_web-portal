@@ -16,7 +16,7 @@ class StudentProjectDetail(Base):
     status = Column(TINYINT, comment="1-> active 2 -> inactive")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
-
+    is_marked = Column(TINYINT(1),comment="1-> marked 0-> didn't marked")
     # ForeignKey
     created_by = Column(Integer,ForeignKey('user.id'))
     task_id = Column(Integer,ForeignKey("task.id"))

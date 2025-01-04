@@ -21,8 +21,9 @@ class Batch(Base):
     users = relationship("User", foreign_keys='[User.batch_id]', back_populates="batch")  # Many Users can belong to one Batch
     creator = relationship("User", foreign_keys=[created_by], back_populates="created_batches", uselist=False) 
     applications = relationship("ApplicationDetails", back_populates="batch")
-    task = relationship("Task", back_populates="batch")
+    # task = relationship("Task", back_populates="batch")
     course_material = relationship("CourseMaterial", back_populates="batch")
     work_report = relationship("WorkReport", back_populates="batch")
     assigned_exams = relationship("AssignExam", back_populates="batch")
     material_access = relationship("MaterialAccess", back_populates="batch")
+    task_assign = relationship("TaskAssign",back_populates="batch")

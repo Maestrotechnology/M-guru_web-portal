@@ -153,7 +153,6 @@ async def update_question(*,
                 get_option.name = data["answer_name"]
                 get_option.answer_status = data["answer_status"] if data["answer_status"] else 2
                 db.commit()
-                print(get_option.answer_status )
     
     return ({"status":1,"msg":"Success."})
  
@@ -171,8 +170,6 @@ async def addQuestions(
                         answers: str = Form(None, description="answer1,answer2,answer3"),
 
 ):
-        print(options)
-        print(answers)
         user=get_user_token(db=db,token=token)
         if not user:
             return {"status":0,"msg":"Your login session expires.Please login again."}
@@ -188,9 +185,18 @@ async def addQuestions(
         get_set = db.query(QuestionSet).filter(QuestionSet.id == set_id, QuestionSet.exam_id == exam_id, QuestionSet.status == 1).first()
         if not get_set:
             return {"status":0, "msg":"Invaild set and exam"}
-        
-        if question_type_id in [1,3] and not options and not answers:
-             return {"status":0, "msg":"Choose need options and answer"}
+        if question_type_id in [1,3]: 
+            count_options = len(json.loads(options))
+            count_answers = len(json.loads(answers))
+            # if not count_options and not count_answers:
+            #     return {"status":0, "msg":"Choose need options and answer"}
+            if count_options + count_answers < 2:
+                 return {"status":0,"msg":"Need atleast 2 options"}
+            # if count_options + count_answers ==1  and question_type_id ==3:
+            #      return {"status":0,"msg":"For multi choose need atleast 3 options"}
+            
+                 
+                 
         create_question = Question(
             question_title = question_title,
             mark = mark,
@@ -220,16 +226,13 @@ async def addQuestions(
                         created_at = datetime.now(settings.tz_IN),
                         updated_at = datetime.now(settings.tz_IN)
                     )
-                    print(option)
                     db.add(create_option)
                     db.commit()
             if answers:
                 # get_answers = answers.split(",")
                 if question_type_id!=2:
                     get_answers = json.loads(answers)
-                    print(get_answers)
                 if question_type_id == 1:
-                        print(get_answers.get("name"))
                         create_option = Option(
                                 name = get_answers.get("name"),
                                 answer_status = 1,
@@ -239,6 +242,7 @@ async def addQuestions(
                                 updated_at = datetime.now(settings.tz_IN)
                             )
                         db.add(create_option)
+                        db.commit()
                 # if question_type_id == 2:
                 #         create_option = Option(
                 #                 name = answers,
@@ -261,6 +265,7 @@ async def addQuestions(
                                     updated_at = datetime.now(settings.tz_IN)
                                 )
                             db.add(create_option)
+                            db.commit()
                 db.commit()
         return {"status":1, "msg":"Question add successfully"}
 
@@ -293,7 +298,6 @@ async def listQuestions(
         totalMarkForParticularPaper = db.query(func.sum(Question.mark)).filter(
              Question.status==1,Question.set_id == set_id, Question.exam_id == exam_id
              ).group_by(Question.set_id).scalar()
-        print(totalMarkForParticularPaper)
         if question_id:
              get_questions = get_questions.filter(Question.id == question_id)
         if question_title:

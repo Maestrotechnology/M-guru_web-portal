@@ -18,7 +18,10 @@ async def dropDownCourse(db:Session = Depends(deps.get_db),
     user = deps.get_user_token(db=db,token =token)
     if user:
         getAllCourse= db.query(Course).\
-        filter(Course.status==1).order_by(Course.name.asc()).all()
+        filter(Course.status==1).order_by(Course.name.asc())
+        if user.user_type ==2:
+            getAllCourse = getAllCourse.join(CourseAssign,Course.id==CourseAssign.course_id).filter(CourseAssign.user_id==user.id,CourseAssign.status==1).distinct(Course.id)
+        getAllCourse = getAllCourse.all()
         dataList = []
         if getAllCourse:
             for row in getAllCourse:
@@ -79,7 +82,7 @@ async def dropDownTask(
     if user.user_type ==2:
         get_task = get_task.join(CourseAssign,CourseAssign.course_id==Task.course_id).filter(CourseAssign.user_id==user.id,CourseAssign.status==1)
     if user.user_type ==3:
-        get_task = get_task.join(CourseAssign,CourseAssign.course_id==Task.course_id).filter(CourseAssign.user_id==user.id,CourseAssign.status==1,Task.batch_id==user.batch_id)
+        get_task = get_task.join(CourseAssign,CourseAssign.course_id==Task.course_id).join(TaskAssign,Task.id==TaskAssign.task_id).filter(CourseAssign.user_id==user.id,CourseAssign.status==1,TaskAssign.batch_id==user.batch_id,TaskAssign.status==1)
     get_task = get_task.all()
     data_list = []
     for data in get_task:
@@ -157,9 +160,9 @@ async def dropdownActiveBatchStudent(
         
         get_students = db.query(User).join(Batch,
                           Batch.id == User.batch_id                   
-                        ).filter(User.user_type == 3, User.status == 1, Batch.status == 1).order_by(User.name)
+                        ).join(CourseAssign,CourseAssign.user_id==User.id).filter(User.user_type == 3, User.status == 1, Batch.status == 1,CourseAssign.status==1).order_by(User.name)
         if course_id:
-            get_students = get_students.filter(User.course_id == course_id)
+            get_students = get_students.filter(CourseAssign.course_id == course_id)
         get_students = get_students.all()
         data_list = []
         for data in get_students:

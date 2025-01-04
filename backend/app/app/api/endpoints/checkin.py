@@ -132,10 +132,11 @@ async def add_task(
                 status=1,
                 created_at=datetime.now(settings.tz_IN),
                 mentor_time=mentor_time,
-                user_id=user.id,
+                student_id=user.id,
                 expected_time=expected_time,
                 trainer_id=trainer_id,
-                rating=rating
+                rating=rating,
+                created_by = user.id
             )
         db.add(addTaskDetail)
         db.commit()
@@ -275,6 +276,7 @@ async def list_trainer_rating(
                     db: Session = Depends(get_db),
                     token: str = Form(...),
                     trainer_id:str=Form(...),
+                    student_name:str=Form(None),
                     from_date: datetime = Form(None),
                     to_date: datetime = Form(None),
                     page: int = 1,
@@ -287,7 +289,8 @@ async def list_trainer_rating(
                                                    TaskDetail.status==1).order_by(TaskDetail.id.desc())
         if from_date and to_date:
             get_taskDetail = get_taskDetail.filter(TaskDetail.created_at >= from_date ,TaskDetail.created_at <= to_date)
-
+        if  student_name:
+            get_taskDetail = get_taskDetail.join(User,User.id==TaskDetail.student_id).filter(User.status!=1,User.name.like("%"+student_name+"%")).distinct(TaskDetail.id)
         totalCount= get_taskDetail.count()
         total_page,offset,limit=get_pagination(totalCount,page,size)
         get_taskDetail=get_taskDetail.limit(limit).offset(offset).all()
@@ -356,8 +359,8 @@ async def trainer_work(
                 status=1,
                 taken_time=time_taken,
                 created_at=datetime.now(settings.tz_IN),
-                batch_id=batch_id
-                
+                batch_id=batch_id,
+                created_by = user.id
             )
         db.add(addWorkReport)
         db.commit()

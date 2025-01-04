@@ -25,3 +25,4 @@ from .questions import Question
 from .student_exam_details import StudentExamDetail
 from .course_assign import CourseAssign
 from .material_access import MaterialAccess
+from .task_assign import TaskAssign

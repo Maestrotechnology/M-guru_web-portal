@@ -112,6 +112,8 @@ async def login(*,db: Session = Depends(deps.get_db),
                 'token': key,
                 "user_id":user.id,
                 "user_type":user.user_type,
+                "username":user.username,
+                "name":user.name,
                 'msg': 'Successfully LoggedIn.',  
                 'status': 1,
                 "checkin_time":checkTodayCheckIN.check_in if checkTodayCheckIN else None
@@ -227,26 +229,28 @@ Wants to Change their Password"""
 
 async def changePassword(db: Session = Depends(deps.get_db),
                           token: str = Form(...)
-                          ,old_password: str = Form(...),
+                          ,old_password: str = Form(None),
                           new_password: str = Form(...),
-                          repeat_password: str = Form(...)):
+                          user_id : int = Form(None)):
 
     user = deps.get_user_token(db = db,token = token)
     if user:
-        
-        
-        if  verify_password(old_password,user.password):
-
-            if new_password!=repeat_password:
-                return ({"status":0,"msg":"Password is not match."})
-            
-            else:           
+        if not user_id:
+            if  verify_password(old_password,user.password):         
                 user.password = get_password_hash(new_password)
                 db.commit()
-
                 return ({"status": 1,"msg": "Password successfully updated."})
+            else:
+                return ({"status": 0,"msg": "Invalid Password."})
         else:
-            return ({"status": 0,"msg": "Current password is invalid."})
+            if user.user_type != 1:
+                return {"status":0,"msg":"Access Delined"} 
+            get_user = db.query(User).filter(User.id ==user_id,User.status ==1).first()
+            if not get_user:
+                return {"status":0,"msg":"User not found"}
+            get_user.password = get_password_hash(new_password)
+            db.commit()
+            return ({"status": 1,"msg": "Password successfully updated."})
     else:  
         return ({"status":-1,"msg":"Login session expires"})
     
@@ -266,7 +270,6 @@ async def resendOtp(db: Session = Depends(deps.get_db),
         resetKey = reset+"@ghgkhdfkjh@trhghgu"
         otp = "123456"
         getUser.otp = otp
-        print(resetKey)
         getUser.reset_key = resetKey
         getUser.otp_expire_at = expireAt
         db.commit()
@@ -305,7 +308,6 @@ async def forgotPassword(db: Session = Depends(deps.get_db),
             otp="123456"
             message = f'''Your  OTP for Reset Password is : {otp}'''
             reset_key = f'{reset}{checkUser.id}DTEKRNSSHPT'
-            print(datetime.now())
     
             user = user.update({'otp': otp,
                                 'reset_key': reset_key,
@@ -315,13 +317,11 @@ async def forgotPassword(db: Session = Depends(deps.get_db),
             # mblNo = f'+91{checkUser.mobile}'
             try:
                 send = await send_mail(receiver_email = checkUser.email,subject="OTP",message = message)
-                # print(message)
                 return ({'status':1,'reset_key': reset_key,
                         'msg': 
                         f'An OTP message has been sent to {checkUser.email}.',
                         'remaining_seconds':120})
             except Exception as e:
-                # print("EXCEPTION: ",e)
                 return {'status':0,'msg':'Unable to send the Email.'}
 
         else:

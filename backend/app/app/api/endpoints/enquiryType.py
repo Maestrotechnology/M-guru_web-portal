@@ -27,6 +27,7 @@ async def create_enquiryType(db:Session=Depends(get_db),
                     name=name,
                     created_at = datetime.now(),
                     status =1,
+                    created_by = user.id,
                     )
     db.add(addEnquiry)
     db.commit()

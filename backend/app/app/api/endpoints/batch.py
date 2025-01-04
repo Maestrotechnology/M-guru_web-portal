@@ -35,8 +35,8 @@ async def createBatch(db:Session=Depends(get_db),
     if  get_batch:
         return {"status":0,"msg":"Batch  Name Already exit"}
     
-    get_all_batch = db.query(Batch).filter(Batch.status != -1).update({Batch.status: 2})
-    db.commit()
+    # get_all_batch = db.query(Batch).filter(Batch.status != -1).update({Batch.status: 2})
+    # db.commit()
 
     addBatch =  Batch(
                     name=name,
@@ -171,7 +171,7 @@ async def allocateBatch(token:str=Form(...),
                         db: Session=Depends(get_db),
                         application_id: int=Form(...),
                         batch_id: int=Form(...),
-                        course_id: int=Form(...),
+                        course_ids: str=Form(...,description="if multiple 1,2,3,4,5"),
 ):
     user=get_user_token(db=db,token=token)
     if not user:
@@ -186,9 +186,9 @@ async def allocateBatch(token:str=Form(...),
     batch_data = db.query(Batch).filter(Batch.id == batch_id,Batch.status == 1).first()
     if not batch_data:
         return {"status":0, "msg":"Invalid batch"}
-    course_data = db.query(Course).filter(Course.id == course_id,Course.status == 1).first()
-    if not course_data:
-        return {"status":0, "msg":"Invalid Course"}
+    # course_data = db.query(Course).filter(Course.id == course_id,Course.status == 1).first()
+    # if not course_data:
+    #     return {"status":0, "msg":"Invalid Course"}
     
     checkUser = db.query(User).filter(User.status==1)
 
@@ -209,12 +209,23 @@ async def allocateBatch(token:str=Form(...),
         status = 1,
         phone=application_data.phone,
         batch_id = batch_id,
-        course_id = course_id
+        # course_id = course_id,
+        created_by = user.id,
     )
     application_data.batch_id = batch_id
     db.add(create_student)
     db.commit()
-
+    course_ids = course_ids.split(',')
+    for course in course_ids:
+        add_course = CourseAssign(
+            user_id = create_student.id,
+            course_id = course,
+            created_by = user.id,
+            created_at = datetime.now(settings.tz_IN),
+            status = 1
+        )
+        db.add(add_course)
+        db.commit()
     return {"status":1,"msg":"Successfully sent the details to the student and allocated the batch"}
 
 @router.post("/list_batch_details")
@@ -241,11 +252,8 @@ async def listBatchDetails(
     if not batch_data:
         return {"status":0, "msg":"Invalid batch"}
     
-    students = db.query(User).filter(
-        User.batch_id==batch_id,User.status.in_([1,2]),User.user_type==3
-    ).join(
-            CourseAssign, CourseAssign.user_id == User.id)
-    print(students.count(),11111111111111111)
+    students = db.query(User).join(CourseAssign,CourseAssign.user_id==User.id).filter(
+        User.batch_id==batch_id,User.status.in_([1,2]),User.user_type==3,CourseAssign.status==1)
     if user.user_type ==2:
         course_list = [course.course_id for course in db.query(CourseAssign).filter(CourseAssign.user_id == user.id, CourseAssign.status == 1).all()]
         students = students.filter(CourseAssign.course_id.in_(course_list))
@@ -257,15 +265,11 @@ async def listBatchDetails(
         students = students.filter(User.email.like(f"%{email}%"))
     if phone:
         students = students.filter(User.phone.like(f"%{phone}%"))
-    print(students.count(),222222222222222)
-    students = students.order_by(User.id.desc())
-    print(students.count(),333333333333)
+    students = students.order_by(User.id.desc()).distinct(User.id)
     totalCount= students.count()
 
     total_page,offset,limit=get_pagination(totalCount,page,size)
-    print(limit,offset)
     students=students.limit(limit).offset(offset).all()
-    print(len(students))
     dataList =[]
 
     for student in students:
@@ -314,9 +318,9 @@ async def listActiveBranchStudent(
     if user.user_type not in [1,2]:
         return {"status":0,"msg":"Access denied"}
 
-    students = db.query(User).join(Batch,Batch.id == User.batch_id).join(
+    students = db.query(User).outerjoin(Batch,Batch.id == User.batch_id).outerjoin(
             CourseAssign, CourseAssign.user_id == User.id 
-        ).filter(Batch.status==1,User.user_type==3,User.status==1,CourseAssign.status==1)
+        ).filter(Batch.status==1,User.user_type==3,User.status==1,CourseAssign.status==1).distinct(User.id)
     course_list = []
     
     if course_id:

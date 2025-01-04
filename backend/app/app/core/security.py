@@ -33,12 +33,9 @@ def verify_password(plain_password: str, password: str):
 def check_authcode(authcode: str, auth_text: str):
     salt = settings.SALT_KEY
     auth_text = salt+auth_text
-    print("func")
     result = hashlib.sha1(auth_text.encode())
     
     if authcode == result.hexdigest():
-        print("insude auth")
         return True
     else:
-        print("ourt")
         return None

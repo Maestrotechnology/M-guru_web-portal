@@ -15,7 +15,7 @@ router = APIRouter()
 
 @router.post("/create_application")
 async def createApplication(*,
-                            # token: str = Form(...),
+                            token: str = Form(...),
                             db: Annotated[Session, Depends(get_db)],
                             name: Annotated[str, Form(...)],
                             email: Annotated[EmailStr, Form(...)],
@@ -26,17 +26,17 @@ async def createApplication(*,
                             enquiry_id: Annotated[int, Form(...)],
                             course_id: Annotated[int, Form()] = None
 ):
-    # user = get_user_token(db=db,token=token)
-    # if not user:
-    #     return {"status":0,"msg":"Your login session expires.Please login again."}  
-    # if user.user_type != 1:
-    #     return {"status":0,"msg":"Access denied"}
+    user = get_user_token(db=db,token=token)
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}  
+    if user.user_type != 1:
+        return {"status":0,"msg":"Access denied"}
     # get_email = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.email==email).first()
     # if get_email:
-    #     return {"status":0,"msg":"Give Email is already exist"}
+    #     return {"status":0,"msg":"Email already exist"}
     # get_phone = db.query(ApplicationDetails).filter(ApplicationDetails.status==1,ApplicationDetails.phone==phone).first()
     # if get_phone:
-    #     return {"status":0,"msg":"Given Phone Number is already exist"}
+    #     return {"status":0,"msg":"Phone Number already exist"}
     check_enquiry_id = db.query(EnquiryType).filter(EnquiryType.id == enquiry_id).first()
     if not check_enquiry_id:
         return {"status":0, "msg":"Invalid enquiry type"}
@@ -51,7 +51,9 @@ async def createApplication(*,
         file_url = None
 
     application = ApplicationDetails(           
-        name=name,email=email,phone=phone,resume=file_url,qualification=qualification,passed_out_year=passed_out_year,status=1,created_at=datetime.now(settings.tz_IN),course_id=course_id,enquiry_id=enquiry_id
+        name=name,email=email,phone=phone,resume=file_url,qualification=qualification,
+        passed_out_year=passed_out_year,status=1,created_at=datetime.now(settings.tz_IN),
+        course_id=course_id,enquiry_id=enquiry_id,created_by = user.id
     )
     db.add(application)
     db.commit()
@@ -111,7 +113,7 @@ async def updateApplication(*,
     db_application.course_id = course_id
     db_application.enquiry_id = enquiry_id
 
-    db.add(db_application)
+    # db.add(db_application)
     db.commit()
     return {"status":1,"msg":"Successfully submitted"}
 
@@ -131,7 +133,6 @@ async def listApplication(*,
                             size: int = 50
 
 ):
-    print(from_date)
     today =date.today()
     user = get_user_token(db=db,token=token)
     if not user:
@@ -190,7 +191,6 @@ async def listApplication(*,
                                 )
                             )
         else:
-            print(from_date)
             db_applications = db_applications.filter(
                 func.date(ApplicationDetails.created_at) >=from_date,
                 func.date(ApplicationDetails.created_at) <=to_date,
@@ -264,7 +264,7 @@ async def deleteApplication(*,
     if not db_application:
         return {"status":0,"msg":"Application not found"}
     db_application.status=-1
-    db.add(db_application)
+    # db.add(db_application)
     db.commit()
     return {"status":1,"msg":"Application successfully deleted"}
 
@@ -300,6 +300,7 @@ async def scheduleInterview(*,
             scheduled_date=scheduled_date,
             application_id=application_id,
             created_at = datetime.now(settings.tz_IN),
+            created_by = user.id,
             status=1
         )
         db.add(create_interview)
@@ -310,12 +311,12 @@ async def scheduleInterview(*,
 
         await send_mail(receiver_email=db_application.email,message=get_email_templete(db_application,scheduled_date,application_status),subject=" Inviting for Internship Interview " if application_status==1 else "Application status")
         db_application.application_status=2
-        db.add(db_application)
+        # db.add(db_application)
         db.commit()
         return {"status":1, "msg":"Mail sent Successfully"}
     elif application_status==3:
         db_application.application_status=3
-        db.add(db_application)
+        # db.add(db_application)
         db.commit()
         return {"status":1, "msg":"Application successfully moved to waiting list"}
 
@@ -368,7 +369,7 @@ async def enterInterviewMarks(*,
     db_interview_details.programming_mark = programming_mark
     db_interview_details.overall_mark = overall_mark
     db_interview_details.updated_at = datetime.now(settings.tz_IN)
-    db.add(db_interview_details)
+    # db.add(db_interview_details)
     db.commit()
 
     return {"status":1,"msg":"Mark Updated"}

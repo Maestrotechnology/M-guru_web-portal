@@ -28,7 +28,7 @@ async def createCourseMaterial(
         status = 1,
         created_at = datetime.now(settings.tz_IN),
         updated_at = datetime.now(settings.tz_IN),
-        created_by_user_id = user.id,
+        created_by = user.id,
         course_id = course_id
     )
     db.add(course_material)
@@ -41,7 +41,8 @@ async def createCourseMaterial(
                 status = 1,
                 course_material_id = course_material.id,
                 created_at = datetime.now(settings.tz_IN),
-                updated_at = datetime.now(settings.tz_IN)
+                updated_at = datetime.now(settings.tz_IN),
+                created_by = user.id,
             )
             db.add(course_media)
             db.commit()
@@ -81,12 +82,12 @@ async def listCourseMaterials(
 
     data_list = []
     for data in get_course_materials:
-        get_batch = db.query(MaterialAccess).filter(MaterialAccess.status==1,MaterialAccess.course_material_id==data.id).all()
+        get_batch = db.query(MaterialAccess).join(Batch,Batch.id ==MaterialAccess.batch_id).filter(MaterialAccess.status==1,MaterialAccess.course_material_id==data.id,Batch.status==1).all()
         batch_list = []
         for batch in get_batch:
             batch_list.append({
-                "id":batch.batch_id,
-                "batch_name":batch.batch.name if batch.batch_id else None,
+                "Batch_Id":batch.batch_id,
+                "Batch_name":batch.batch.name if batch.batch_id else None,
             })
         data_list.append({
             "id": data.id,
@@ -136,7 +137,6 @@ async def updateCourseMaterials(
     
     if batch_ids:
         batch_ids_list = [int(batch_id) for batch_id in batch_ids.split(",")]
-
         # Get all material access records related to the given course material
         material_access_records = db.query(MaterialAccess).filter(
             MaterialAccess.course_material_id == course_material_id
@@ -147,16 +147,16 @@ async def updateCourseMaterials(
             if record.batch_id in batch_ids_list:
                 # If the batch_id is in the batch_ids_list, ensure the status is active (1)
                 if record.status != 1:
-                    record.status = 1  # Reactivate the record
-                    record.updated_at = datetime.now()  # Update timestamp
-                batch_ids_list.remove(record.batch_id)  # "Pop" or remove this batch_id from the list
+                    record.status = 1  
+                    record.updated_at = datetime.now(settings.tz_IN) 
+                batch_ids_list.remove(record.batch_id)  
             else:
                 # If the batch_id is not in the batch_ids_list, set the status to -1 (inactive)
                 if record.status != -1:
-                    record.status = -1  # Deactivate the record
-                    record.updated_at = datetime.now()  # Update timestamp
+                    record.status = -1 
+                    record.updated_at = datetime.now(settings.tz_IN)  
 
-            db.commit()  # Commit each record after updating
+            db.commit()  
 
         # Step 2: Now, handle the remaining batch_ids that don't have a corresponding record yet
         for batch_id in batch_ids_list:
@@ -170,11 +170,11 @@ async def updateCourseMaterials(
                 # Create a new MaterialAccess record for this batch if not already exists
                 new_access_record = MaterialAccess(
                     batch_id=batch_id,
-                    course_id=course_id,  # Assuming you want to associate this course as well
+                    # course_id=course_id,  # Assuming you want to associate this course as well
                     course_material_id=course_material_id,
                     created_by=user.id,  # The user who is making the update
-                    created_at=datetime.now(),
-                    updated_at=datetime.now(),
+                    created_at=datetime.now(settings.tz_IN),
+                    updated_at=datetime.now(settings.tz_IN),
                     status=1  # Active status for new batches
                 )
 

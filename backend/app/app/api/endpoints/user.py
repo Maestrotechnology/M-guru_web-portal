@@ -25,6 +25,7 @@ async def createUser(db:Session=Depends(get_db),
                      batch_id:int=Form(None)
                      
 ):
+    print(course_id)
 
         
     hashPassword = get_password_hash(password)
@@ -39,7 +40,6 @@ async def createUser(db:Session=Depends(get_db),
             return {"status":0,"msg":"Course required"}
     # if user_type == 3 and batch_id is None:
     #     return {"status":0,"msg":"Batch required for student"}
-    
     checkUser = db.query(User).filter(User.status==1)
 
     if checkUser.filter(User.email == email).first():
@@ -62,17 +62,20 @@ async def createUser(db:Session=Depends(get_db),
                     )
     db.add(addUser)
     db.commit()
-    course_ids = course_id.split(',')
-    for course in course_ids:
-        add_course = CourseAssign(
-            user_id = addUser.id,
-            course_id = course,
-            created_by = user.id,
-            created_at = datetime.now(settings.tz_IN),
-            status = 1
-        )
-        db.add(add_course)
-        db.commit()
+    print(course_id)
+    if course_id:
+        course_ids = course_id.split(',')
+        for course in course_ids:
+            print(course)
+            add_course = CourseAssign(
+                user_id = addUser.id,
+                course_id = course,
+                created_by = user.id,
+                created_at = datetime.now(settings.tz_IN),
+                status = 1
+            )
+            db.add(add_course)
+            db.commit()
     return {
         "status" : 1,
         "msg":"User created successfully"
@@ -102,8 +105,8 @@ async def updateUser(
     if not getUser:
         return {"status":0,"msg":"Given user id  not found"}
         
-    if getUser.user_type == 3 and not course_id:
-        return {"status":0, "msg": "course is required"}
+    # if getUser.user_type == 3 and not course_id:
+    #     return {"status":0, "msg": "course is required"}
 
     # if username:
     #     if checkUser.filter(User.username == username,User.id!=userId).first():
@@ -193,7 +196,7 @@ async def list_user(
         if not get_batch:
             return {"status":0, "msg":"Invalid batch"}
     
-    get_user = db.query(User).filter(User.status==1,User.user_type == userType)
+    get_user = db.query(User).filter(User.status!=-1,User.user_type == userType)
 
     if batch_id:
         get_user = get_user.filter(User.batch_id==batch_id)
@@ -235,7 +238,8 @@ async def list_user(
             # "course_name":  data.course.name if data.course else None,
             # "course_id": data.course_id,
             "phone": data.phone,
-            "course":course_data
+            "course":course_data,
+            "status":data.status
         })
     data=({"page":page,"size":size,"total_page":total_page,
                 "total_count":totalCount,
@@ -298,15 +302,20 @@ async def profile(
         "batch_start_date": user.batch.start_date.strftime("%Y-%m-%d") if user.batch_id else None,}
     }
     
-
-    
-
-
-
-
-
-
-
-
-    
-    
+@router.post("/active_inactive_user")
+async def activeInactiveUser(*,db : Session = Depends(get_db),token:str=Form(...),
+                              user_id : int = Form(...),status : int = Form(...,description="1-> active 2-> inactive")):
+    user  = get_user_token(db,token=token)
+    if status not in [1,2]:
+        return {"status":0,"msg":"Invalid status"}
+    if not user:
+        return {"status":0,"msg":"Your login session expires.Please login again."}
+    if user.user_type != 1:
+        return {"status":0,"msg":"Access denied"}
+    get_user = db.query(User).filter(User.status != -1,User.id ==user_id).first()
+    if not get_user:
+        return {"status":0,"msg":"User not found."}
+    get_user.status = status
+    db.commit()
+    msg = "User Inactivated successfully." if status ==2 else "User activated successfully"
+    return {"status":1,"msg":msg}
