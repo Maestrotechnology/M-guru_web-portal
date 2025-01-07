@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 import datetime
 from sqlalchemy.orm import Session
 from app import models
-import random
+import random,os,sys
 from sqlalchemy import or_
 from app.core import security
 from app.core.config import settings
@@ -13,7 +13,7 @@ import hashlib
 from app.models import ApiTokens,User
 from app.models import User
 from app.core.config import settings
-
+from fpdf import FPDF
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
@@ -170,3 +170,80 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     distance = R * c
     return distance
 
+def add_header(pdf, logo_path="asset/logo.png"):
+    # Outer border
+    pdf.set_draw_color(0, 0, 0)
+    pdf.rect(5, 5, 200, 287)
+
+    # Green and yellow triangle background
+    pdf.set_fill_color(0, 102, 0)  # Dark green
+    pdf.polygon([(5, 5), (50, 5), (5, 25)], 'F')
+    pdf.set_fill_color(255, 204, 0)  # Yellow
+    pdf.polygon([(140, 5), (205, 5), (205, 25)], 'F')
+
+    # Logo
+    pdf.image(logo_path, 80, 10, 50)
+
+    # M-GURU Text
+    # pdf.set_font("Helvetica", "B", 28)
+    # pdf.set_text_color(0, 102, 204)  # Blue
+    # pdf.set_xy(60, 10)
+    # pdf.cell(0, 10, "M", align="L")
+    # pdf.set_text_color(0, 0, 0)  # Black
+    # pdf.cell(0, 10, "Guru", align="L")
+
+    # Student's Mark Sheet Text
+    # pdf.set_font("Times", "B", 16)
+    # pdf.set_text_color(0, 0, 128)  # Navy Blue
+    # pdf.set_xy(60, 20)
+    # pdf.cell(0, 10, title, align="C")
+
+    # Date
+    # pdf.set_font("Times", "B", 12)
+    # pdf.set_text_color(0, 0, 0)
+    # if is_month == 1:
+    #     pdf.set_xy(147, 7.5)
+    #     pdf.cell(0, 10, f"Date : {from_date.strftime('%d-%m-%Y')} - {to_date.strftime('%d-%m-%Y')}", align="L")
+    # else:
+    #     pdf.set_xy(165, 7.5)
+    #     pdf.cell(0, 10, f"Date : {to_date.strftime('%d-%m-%Y')}", align="L")
+
+    # Divider line below the header
+    pdf.line(5, 27, 205, 27)
+
+def pdf_file_storage(file_name: str, f_name: str):
+    base_dir = settings.BASE_UPLOAD_FOLDER + "/upload_files/"
+    # dt = str(int(datetime.now().timestamp()))
+    dt = 1
+    
+    try:
+        os.makedirs(base_dir, mode=0o777, exist_ok=True)
+    except OSError as e:
+        sys.exit(f"Can't create {base_dir}: {e}")
+    
+    output_dir = base_dir
+    files_name = f_name.split(".")
+    save_full_path = f"{output_dir}{files_name[0]}_{dt}.pdf"
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.output(save_full_path)
+    file_exe = f"upload_files/{files_name[0]}_{dt}.pdf"
+    
+    return save_full_path, file_exe
+
+
+class CustomPDF(FPDF):
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Times', 'I', 8)
+        self.set_draw_color(0, 0, 0)
+        self.set_line_width(0.1)
+        self.line(10, self.get_y() - 3, 200, self.get_y() - 3)
+        self.cell(0, 10, f'Page {self.page_no()}', align='C')
+
+def calculate_row_height(pdf, col_widths, data_row, line_height):
+    heights = []
+    for col_width, cell_data in zip(col_widths, data_row):
+        lines = pdf.multi_cell(col_width, line_height, cell_data, border=0, align="L", split_only=True)
+        heights.append(len(lines) * line_height)
+    return max(heights)

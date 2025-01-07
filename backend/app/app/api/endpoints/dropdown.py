@@ -72,7 +72,8 @@ async def dropDownEnquiry(db:Session = Depends(deps.get_db),
 @router.post("/dropDownTask")
 async def dropDownTask(
                         db:Session = Depends(deps.get_db),
-                        token:str=Form(...)
+                        token:str=Form(...),
+                        course_id : int=Form(None),
 ):
     user = get_user_token(db,token=token)
     if not user:
@@ -82,7 +83,11 @@ async def dropDownTask(
     if user.user_type ==2:
         get_task = get_task.join(CourseAssign,CourseAssign.course_id==Task.course_id).filter(CourseAssign.user_id==user.id,CourseAssign.status==1)
     if user.user_type ==3:
-        get_task = get_task.join(CourseAssign,CourseAssign.course_id==Task.course_id).join(TaskAssign,Task.id==TaskAssign.task_id).filter(CourseAssign.user_id==user.id,CourseAssign.status==1,TaskAssign.batch_id==user.batch_id,TaskAssign.status==1)
+        get_task = get_task.join(CourseAssign,CourseAssign.course_id==Task.course_id
+                    ).join(TaskAssign,Task.id==TaskAssign.task_id).filter(CourseAssign.user_id==user.id,
+                    CourseAssign.status==1,TaskAssign.batch_id==user.batch_id,TaskAssign.status==1)
+    if course_id:
+        get_task = get_task.filter(Task.course_id == course_id)
     get_task = get_task.all()
     data_list = []
     for data in get_task:
@@ -153,6 +158,7 @@ async def dropdownActiveBatchStudent(
                                         db: Session = Depends(get_db),
                                         token: str = Form(...),
                                         course_id : int = Form(None),
+                                        batch_id : int = Form(None),
 ):
         user = get_user_token(db,token=token)
         if not user:
@@ -163,6 +169,8 @@ async def dropdownActiveBatchStudent(
                         ).join(CourseAssign,CourseAssign.user_id==User.id).filter(User.user_type == 3, User.status == 1, Batch.status == 1,CourseAssign.status==1).order_by(User.name)
         if course_id:
             get_students = get_students.filter(CourseAssign.course_id == course_id)
+        if batch_id:
+            get_students = get_students.filter(User.batch_id==batch_id)
         get_students = get_students.all()
         data_list = []
         for data in get_students:
@@ -175,13 +183,17 @@ async def dropdownActiveBatchStudent(
 @router.post("/dropdown_exam")
 async def dropDownExam(
                          db: Session = Depends(get_db),
-                         token: str = Form(...)
+                         token: str = Form(...),
+                         course_id : int = Form(None),
 ):
         user = get_user_token(db,token=token)
         if not user:
             return {"status":0,"msg":"Your login session expires.Please login again."}
         
-        get_exam = db.query(Exam).filter(Exam.status == 1).all()
+        get_exam = db.query(Exam).filter(Exam.status == 1)
+        if course_id:
+            get_exam = get_exam.filter(Exam.course_id==course_id)
+        get_exam = get_exam.all()
         data_list = []
         for data in get_exam:
             data_list.append({

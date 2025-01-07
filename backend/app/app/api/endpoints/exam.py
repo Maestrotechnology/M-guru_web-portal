@@ -189,7 +189,7 @@ async def assignExam(
 
         get_students = get_students.all()
         for student in get_students:
-              assign = AssignExam(
+            assign = AssignExam(
                     batch_id = batch_id,
                     exam_id = exam_id,
                     course_id = get_exam.course_id,
@@ -200,8 +200,20 @@ async def assignExam(
                     updated_at = datetime.now(settings.tz_IN),
                     assigned_by = user.id,
               )
-              db.add(assign)
-        db.commit()
+            db.add(assign)
+            db.commit()
+
+            get_all_question = db.query(Question).filter(Question.set_id==assign.set_id,Question.status==1).all()
+            for question in get_all_question:
+                  assign_question = AssignedQuestion(
+                        assign_exam_id = assign.id,
+                        student_id = assign.student_id,
+                        question_id = question.id,
+                        created_at = datetime.now(settings.tz_IN),
+                        status =1,
+                  )
+                  db.add(assign_question)
+                  db.commit()
         return {"status": 1, "msg": "Exam assigned successfully"}
 
 @router.post("/list_student_exam")
@@ -290,6 +302,20 @@ async def listStudentExam(
       return {"status":1,"msg":"Success","data":data}
 
 
+@router.post("/delete_assign_exam")
+async def deleteAssignExam(db:Session=Depends(get_db),token : str=Form(...), assign_exam_id:int=Form(...)):
+      user=get_user_token(db=db,token=token)
+      if not user:
+         return {"status":0,"msg":"Your login session expires.Please login again."}
+      if user.user_type != 1:
+            return {"status":0,"msg":"Access denied."}
+      get_assign_exam = db.query(AssignExam).filter(AssignExam.id ==assign_exam_id,AssignExam.status==1).first()
+      if not get_assign_exam:
+            return {"status":0,"msg":"Assigned Exam not found"}
+      get_assign_exam.status = -1
+      db.commit()
+      return {"status":1,"msg":"Unassigned successfully."}
+      
 
 @router.post("/answer")
 async def answer(
@@ -308,11 +334,12 @@ async def answer(
       user=get_user_token(db=db,token=token)
       if not user:
          return {"status":0,"msg":"Your login session expires.Please login again."}
-
+      if  len(answer) == 0 and  type_id in [2,4]:
+            return {"status": 1, "msg": "Didn't answer"}  # Print the invalid response
       get_assigned = db.query(AssignExam).filter(AssignExam.id == assigned_id).first()
       if not get_assigned:
             return{"status":0, "msg":"Invaild assigned id"}
-      get_question = db.query(Question).filter(Question.id == question_id,Question.status == 1).first()
+      get_question = db.query(Question).filter(Question.id == question_id).first()
       if not get_question:
             return{"status":0, "msg":"Invaild question"}
       get_question_mark = get_question.mark
@@ -515,12 +542,18 @@ async def getStudentExamDetails(
         return {"status": 0, "msg": "Invalid details"}
     
     # Get the set associated with this assigned exam
-    get_set = db.query(QuestionSet).filter(QuestionSet.id == get_assigned_details.set_id, QuestionSet.status == 1).first()
-    if not get_set:
-        return {"status": 0, "msg": "Invalid details"}
+#     get_set = db.query(QuestionSet).filter(QuestionSet.id == get_assigned_details.set_id, QuestionSet.status == 1).first()
+#     if not get_set:
+#         return {"status": 0, "msg": "Invalid details"}
     
+      #to get the assigned question 
+    get_assigned_questions = db.query(AssignedQuestion).filter(AssignedQuestion.status==1,AssignedQuestion.assign_exam_id==assigned_id).all()
+    question_ids = []
+    for assigned_question in get_assigned_questions:
+      question_ids.append(assigned_question.question_id)
+
     # Get all active questions for this set
-    get_questions = db.query(Question).filter(Question.status == 1, Question.set_id == get_assigned_details.set_id).all()
+    get_questions = db.query(Question).filter(Question.id.in_(question_ids)).all()
     
     # Calculate the total marks for the exam set
     total_mark_for_set = sum(question.mark for question in get_questions)
@@ -552,11 +585,11 @@ async def getStudentExamDetails(
             #     options = [int(option) for option in answered_question.option_ids.split(",")]
                 get_options = db.query(Option).filter(Option.question_id==answered_question.question_id,Option.status==1).all()
                 correct_answer = [option.name for option in get_options if option.answer_status == 1]
-            elif question.question_type_id in [1, 3]:
+            if question.question_type_id in [1, 3]:
                 # For single choice or multi-choice questions
                 get_correct_answer = db.query(Option).filter(Option.status == 1, Option.answer_status == 1, Option.question_id == question.id).all()
                 correct_answer = [option.name for option in get_correct_answer]
-            elif question.question_type_id == 2:
+            if question.question_type_id == 2:
                 # For free text questions
                 correct_answer.append(question.answer)
         # Add question and its related data to the response list

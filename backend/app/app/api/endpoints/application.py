@@ -295,7 +295,7 @@ async def scheduleInterview(*,
             return {"status":0, "msg":"Please enter interview date"}
         
         await send_mail(receiver_email=db_application.email,message=get_email_templete(db_application,scheduled_date,application_status),subject="Application status")
-
+        print(1111)
         create_interview = Interview(
             scheduled_date=scheduled_date,
             application_id=application_id,
@@ -309,7 +309,8 @@ async def scheduleInterview(*,
         return {"status":1, "msg":"Interview scheduled Successfully"}
     elif application_status==2:
 
-        await send_mail(receiver_email=db_application.email,message=get_email_templete(db_application,scheduled_date,application_status),subject=" Inviting for Internship Interview " if application_status==1 else "Application status")
+        if await send_mail(receiver_email=db_application.email,message=get_email_templete(db_application,scheduled_date,application_status),subject=" Inviting for Internship Interview " if application_status==1 else "Application status"):
+            print(True)
         db_application.application_status=2
         # db.add(db_application)
         db.commit()

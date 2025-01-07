@@ -171,6 +171,7 @@ async def allocateBatch(token:str=Form(...),
                         db: Session=Depends(get_db),
                         application_id: int=Form(...),
                         batch_id: int=Form(...),
+                        password : str = Form(...),
                         course_ids: str=Form(...,description="if multiple 1,2,3,4,5"),
 ):
     user=get_user_token(db=db,token=token)
@@ -196,15 +197,12 @@ async def allocateBatch(token:str=Form(...),
         return {"status":0,"msg":"Give Email is already exist"}
     if checkUser.filter(User.phone==application_data.phone,User.batch_id==batch_id).first():
         return {"status":0,"msg":"Given Phone Number is already exist"}
-    
-    # await send_mail(receiver_email=application_data.email,message=get_email_templete(application_data,batch_data.start_date,4),subject="Application status")
-
     create_student = User(
         name = application_data.name,
         email = application_data.email,
         user_type = 3,
         username = get_username(db,3),
-        password = get_password_hash("12345"),
+        password = get_password_hash(password),
         create_at = datetime.now(settings.tz_IN),
         status = 1,
         phone=application_data.phone,
@@ -215,6 +213,9 @@ async def allocateBatch(token:str=Form(...),
     application_data.batch_id = batch_id
     db.add(create_student)
     db.commit()
+    
+    await send_mail(receiver_email=application_data.email,message=get_email_templete(application_data,batch_data.start_date,6,username= create_student.username,password= password),subject="Application status")
+
     course_ids = course_ids.split(',')
     for course in course_ids:
         add_course = CourseAssign(

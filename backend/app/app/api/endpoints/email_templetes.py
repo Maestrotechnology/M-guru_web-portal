@@ -1,6 +1,7 @@
 from app.models import *
 
-def get_email_templete(application = None,scheduled_date=None,status=None,subject=None):
+def get_email_templete(application = None,scheduled_date=None,status=None,subject=None,username = None,password=None):
+    print(password)
     if status == 1:#schedule interview
        
         return f"""
@@ -388,3 +389,87 @@ def get_email_templete(application = None,scheduled_date=None,status=None,subjec
         </div>
     </body>
     </html>"""
+
+    elif status == 6: # sending user name password
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 20px auto;
+                    padding: 20px;
+                    border: 1px solid #ddd;
+                    border-radius: 10px;
+                    background-color: #f9f9f9;
+                }}
+                .header {{
+                    text-align: center;
+                    margin-bottom: 20px;
+                }}
+                .header h1 {{
+                    font-size: 24px;
+                    color: #0073e6;
+                }}
+                .content {{
+                    margin-bottom: 20px;
+                }}
+                .footer {{
+                    margin-top: 20px;
+                    font-size: 14px;
+                    text-align: center;
+                    color: #555;
+                }}
+                .footer a {{
+                    color: #0073e6;
+                    text-decoration: none;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Your Account Details</h1>
+                </div>
+                <div class="content">
+                    <p>Dear <strong>{getattr(application, 'name', 'User')}</strong>,</p>
+                    <p>
+                        Welcome to Velava Foundation! We are pleased to provide you with your account details below:
+                    </p>
+                    <p>
+                        <strong>Username:</strong> {username}<br>
+                        <strong>Password:</strong> {password}
+                    </p>
+                    <p>
+                        To log in and access your account, please visit the following link:
+                    </p>
+                    <p>
+                        <a href="https://samplewebsite.com/login" target="_blank">https://samplewebsite.com/login</a>
+                    </p>
+                    <p>
+                        If you have any questions or need assistance, feel free to reach out to us at 
+                        <a href="tel:+918637615560">+91-863-7615560</a> or reply to this email.
+                    </p>
+                    <p>We look forward to seeing you onboard!</p>
+                </div>
+                <div class="footer">
+                    <p>Best Regards,</p>
+                    <p><strong>Gowri Priya D.</strong><br>
+                    Operations<br>
+                    Velava Foundation
+                    </p>
+                    <p>
+                        Contact No: <a href="tel:+918637615560">+91-863-7615560</a><br>
+                        <a href="https://velavafoundation.org/">https://velavafoundation.org/</a>
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """

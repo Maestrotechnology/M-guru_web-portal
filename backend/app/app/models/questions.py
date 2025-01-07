@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import  Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import  Column, Integer, String, DateTime, ForeignKey,Text
 from app.db.base_class import Base
 from sqlalchemy.dialects.mysql import TINYINT
 
@@ -7,7 +7,7 @@ class Question(Base):
     __tablename__ = "question"
 
     id = Column(Integer, primary_key=True, index=True)
-    question_title = Column(String(255))
+    question_title = Column(Text)
     mark = Column(Integer)
     no_of_answers = Column(TINYINT)
     answer = Column(String(250))
@@ -29,3 +29,4 @@ class Question(Base):
     options = relationship("Option", back_populates="question")
     exam_details = relationship("StudentExamDetail", back_populates="question")
     user = relationship('User', back_populates='question')
+    assigned_question = relationship("AssignedQuestion",back_populates="question")

@@ -30,3 +30,5 @@ class AssignExam(Base):
     assigner = relationship("User", foreign_keys=[assigned_by], back_populates="trainer_assigner")
 
     exam_details = relationship("StudentExamDetail", back_populates="assigned")
+    assigned_question = relationship("AssignedQuestion",back_populates="assign_exam")
+    

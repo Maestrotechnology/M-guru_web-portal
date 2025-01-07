@@ -72,3 +72,4 @@ class User(Base):
     student_exam_detail = relationship('StudentExamDetail', foreign_keys='[StudentExamDetail.created_by]', back_populates='user')
     type_of_question = relationship('TypeOfQuestion', back_populates='user')
     task_assign = relationship("TaskAssign",back_populates="user")
+    assigned_question = relationship("AssignedQuestion",back_populates="student")
