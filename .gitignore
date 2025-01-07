@@ -5,3 +5,4 @@ backend/app/app/core/config.py
 env
 backend/app/app/api/endpoints/__pycache__/
 backend/app/app/models/__pycache__/
+mguru_env/

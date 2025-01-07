@@ -244,7 +244,10 @@ async def deleteProject(
 
     if not get_project:
         return {"status":0,"msg":"Project not found"}
-    
+    if user.user_type ==3:
+        get_score = db.query(Score).filter(Score.task_id==get_project.task_id,Score.student_id==user.id,Score.status==1,Score.mark != None).first()
+        if get_score:
+            return {"status":0,"msg":"project has already been marked and cannot be edited."}
     get_project.status = -1
     db.commit()
     return {"status":1,"msg":"Project successfully deleted"}
