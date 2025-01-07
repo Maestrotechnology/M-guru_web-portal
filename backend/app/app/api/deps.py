@@ -233,13 +233,14 @@ def pdf_file_storage(file_name: str, f_name: str):
 
 
 class CustomPDF(FPDF):
-    def footer(self):
-        self.set_y(-15)
-        self.set_font('Times', 'I', 8)
-        self.set_draw_color(0, 0, 0)
-        self.set_line_width(0.1)
-        self.line(10, self.get_y() - 3, 200, self.get_y() - 3)
-        self.cell(0, 10, f'Page {self.page_no()}', align='C')
+    # def footer(self):
+    #     self.set_y(-15)
+    #     self.set_font('Times', 'I', 8)
+    #     self.set_draw_color(0, 0, 0)
+    #     self.set_line_width(0.1)
+    #     self.line(10, self.get_y() - 3, 200, self.get_y() - 3)
+    #     self.cell(0, 10, f'Page {self.page_no()}', align='C')
+    pass
 
 def calculate_row_height(pdf, col_widths, data_row, line_height):
     heights = []

@@ -239,9 +239,15 @@ async def addQuestions(
             return {"status":0, "msg":"Invaild set and exam"}
         if question_type_id in [1,3]: 
             count_options = len(json.loads(options))
-            count_answers = len(json.loads(answers))
+            if type(json.loads(answers)) == list:
+                count_answers = len(json.loads(answers))
+            else:
+                count_answers =1 if len(json.loads(answers)) ==2 else 0
+            
+            print(count_options,count_answers)
             # if not count_options and not count_answers:
             #     return {"status":0, "msg":"Choose need options and answer"}
+            print(count_options + count_answers)
             if count_options + count_answers < 2:
                  return {"status":0,"msg":"Need atleast 2 options"}
             # if count_options + count_answers ==1  and question_type_id ==3:

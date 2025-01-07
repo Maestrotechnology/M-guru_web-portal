@@ -208,12 +208,14 @@ async def updateProject(
     get_project = db.query(StudentProjectDetail).filter(
         StudentProjectDetail.id == project_id,StudentProjectDetail.status==1
     ).first()
-
     if not get_project:
         return {"status":0,"msg":"Project not found"}
     if user.user_type ==3:
-        if get_project.is_marked ==1:
+        get_score = db.query(Score).filter(Score.task_id==task_id,Score.student_id==user.id,Score.status==1,Score.mark != None).first()
+        if get_score:
             return {"status":0,"msg":"project has already been marked and cannot be edited."}
+        # if get_project.is_marked ==1:
+        #     return {"status":0,"msg":"project has already been marked and cannot be edited."}
     if project_url:
         file_path, file_url = file_storage(project_url, project_url.filename)
         get_project.project_url=file_url

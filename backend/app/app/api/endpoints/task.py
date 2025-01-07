@@ -27,6 +27,9 @@ async def createTask(
     if not user:
         return {"status":0,"msg":"Your login session expires.Please login again."}
     
+    check_task = db.query(Task).filter(Task.name==name,Task.course_id==course_id,Task.status==1).first()
+    if check_task:
+        return {"status":0,"msg":"Task already exits."}
     if task_report_url:
         file_path, file_url = file_storage(task_report_url, task_report_url.filename)
     else:

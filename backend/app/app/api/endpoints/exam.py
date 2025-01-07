@@ -27,6 +27,9 @@ async def createExam(
         check_course = db.query(Course).filter(Course.id ==course_id,Course.status==1).first()
         if not check_course:
               return {'status':0,"msg":"Course Not Found"}
+        check_name = db.query(Exam).filter(Exam.name ==name,Exam.course_id==course_id.exam.Status==1).first()
+        if check_name:
+              return {"status":0,"msg":"Exam already exits."}
         create_exam = Exam(
               name = name,
               status = 1,

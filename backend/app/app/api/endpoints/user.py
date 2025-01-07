@@ -344,9 +344,10 @@ async def viewMarkSheet(*,db : Session = Depends(get_db),token:str=Form(...),
     for course in get_assigned_course:
         course_data.append(course.course.name)
     assigned_exams = db.query(AssignExam).filter(AssignExam.student_id == student_id,AssignExam.status==1).all()
+    get_student_score = db.query(Score).join(Task,Task.id == Score.task_id).filter(Score.student_id==student_id,Score.status==1,Task.status == 1).all()
 
-    if not assigned_exams:
-        return {"status": 0, "msg": "No exams found for this student."}
+    if not assigned_exams and not get_student_score:
+        return {"status": 0, "msg": "There is no Task and Exam found for the user."}
 
     data_list = []
     
@@ -386,7 +387,6 @@ async def viewMarkSheet(*,db : Session = Depends(get_db),token:str=Form(...),
         }
         data_list.append(exam_data)
     task_data = []
-    get_student_score = db.query(Score).join(Task,Task.id == Score.task_id).filter(Score.student_id==student_id,Score.status==1,Task.status == 1).all()
     for data in get_student_score:
         task_data.append({
             "id":data.id,
@@ -404,6 +404,7 @@ async def viewMarkSheet(*,db : Session = Depends(get_db),token:str=Form(...),
     pdf.add_page()
     logo_path = "asset/logo.png"
     add_header(pdf,logo_path)
+    pdf.rect(5, 5, 200, 287)
 
     pdf.set_font("Times", "B", 16)
     pdf.set_text_color(0, 0, 128)  # Navy Blue
@@ -466,6 +467,7 @@ async def viewMarkSheet(*,db : Session = Depends(get_db),token:str=Form(...),
     for task in task_data:
         if pdf.get_y() > 265:
             pdf.add_page()
+            pdf.rect(5, 5, 200, 287)
         row_data = [
             str(serial_no),
             task["task_name"],
@@ -516,6 +518,7 @@ async def viewMarkSheet(*,db : Session = Depends(get_db),token:str=Form(...),
     # Exam Results Table
     if pdf.get_y() > 265:
             pdf.add_page()
+            pdf.rect(5, 5, 200, 287)
     pdf.set_font("Times", "B", 12)
     pdf.cell(0, 10, "Exam Results", ln=True, align="C")
 
@@ -530,12 +533,14 @@ async def viewMarkSheet(*,db : Session = Depends(get_db),token:str=Form(...),
     pdf.set_font("Times", "", 12)
     if pdf.get_y() > 265:
             pdf.add_page()
+            pdf.rect(5, 5, 200, 287)
 
     # Loop through exam data
     serial_no = 1
     for exam_data in data_list:
         if pdf.get_y() > 265:
             pdf.add_page()
+            pdf.rect(5, 5, 200, 287)
         row_data = [
             str(serial_no),
             exam_data["exam_date"],

@@ -186,7 +186,7 @@ async def list_task_detail(
                 "expected_time":data.expected_time,
                 "trainer_id":data.trainer_id,
                 "date":data.created_at.strftime("%d-%m-%Y"),
-                "trainer_name":data.trainer.username if data.trainer_id!=None else None,
+                "trainer_name":data.trainer.name if data.trainer_id!=None else None,
                 "task_description":data.task_description,
             })
         data=({"page":page,"size":size,"total_page":total_page,
