@@ -38,18 +38,14 @@ async def createUser(db:Session=Depends(get_db),
     # if user_type == 3 and batch_id is None:
     #     return {"status":0,"msg":"Batch required for student"}
     checkUser = db.query(User).filter(User.status==1)
-    print(batch_id)
     if user_type !=3 or (user_type ==3 and batch_id == None):
-        print(2222)
         if checkUser.filter(User.email == email).first():
             return {"status":0,"msg":"Given Email is already exist"}
         if checkUser.filter(User.phone==phone).first():
             return {"status":0,"msg":"Given Phone Number is already exist"}
     elif user.user_type ==3 and batch_id:
-        print(1111)
         if checkUser.filter(User.email == email,User.batch_id==batch_id).first():
             uuuuu = checkUser.filter(User.email == email,User.batch_id==batch_id).first()
-            print(uuuuu.id)
             return {"status":0,"msg":"Given Email is already exist"}
         if checkUser.filter(User.phone==phone,User.batch_id==batch_id).first():
             return {"status":0,"msg":"Given Phone Number is already exist"}

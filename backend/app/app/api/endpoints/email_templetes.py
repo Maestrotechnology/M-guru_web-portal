@@ -1,7 +1,6 @@
 from app.models import *
 
 def get_email_templete(application = None,scheduled_date=None,status=None,subject=None,username = None,password=None):
-    print(password)
     if status == 1:#schedule interview
        
         return f"""

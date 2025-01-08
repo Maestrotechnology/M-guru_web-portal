@@ -484,7 +484,6 @@ async def getAuth(name:str=Form(...)):
     
     result = hashlib.sha1(name.encode())
     
-    print(result.hexdigest())
     return result.hexdigest()
 
 # @router.post('/forgotPassword')

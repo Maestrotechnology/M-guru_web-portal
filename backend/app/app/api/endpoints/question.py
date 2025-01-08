@@ -244,10 +244,8 @@ async def addQuestions(
             else:
                 count_answers =1 if len(json.loads(answers)) ==2 else 0
             
-            print(count_options,count_answers)
             # if not count_options and not count_answers:
             #     return {"status":0, "msg":"Choose need options and answer"}
-            print(count_options + count_answers)
             if count_options + count_answers < 2:
                  return {"status":0,"msg":"Need atleast 2 options"}
             # if count_options + count_answers ==1  and question_type_id ==3:
@@ -470,7 +468,6 @@ async def listExamQuestions(
         get_questions = db.query(Question).filter(
              Question.id.in_(question_ids)
              )
-        print(get_questions.count())
         totalMarkForParticularPaper = db.query(func.sum(Question.mark)).filter(
              Question.id.in_(question_ids)
              ).group_by(Question.set_id).scalar()
